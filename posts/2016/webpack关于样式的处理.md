@@ -107,8 +107,86 @@ plugins: [
 ]
 ```
 
+### postcss
+以前我们写样式时，有些样式不同浏览器需要加不同的前缀，如-webkit-。现在有了构建工具，我们便不需要再去关注这些前缀了，构建工具会自动帮我们加上这些前缀。
+
+对于webpack我们自然想到需要使用loader或者plugin来帮助我们做这些事情，查了下发现autoprefixer-loader已经废弃不再维护了，推荐使用[posscss](https://github.com/postcss/postcss)
+
+postcss是用于在js中转换css样式的js插件，需要搭配其他插件一起使用，这点和babel6一样，本身只是个转换器，并不提供代码解析功能。
+
+这里我们需要[autoprefixer](https://github.com/postcss/autoprefixer)插件来为我们的样式添加前缀。首先下载该模块。
+```javascript
+npm install autoprefixer --save-dev
+```
+接着便可以配置webpack了
+```javascript
+var autoprefixer = require('autoprefixer')
+module.exports = {
+  ...
+  module: {
+    loaders: [
+      ...
+      {
+        {
+          test: /\.css$/,
+          loader: ExtractTextPlugin.extract(["css-loader", "postcss-loader"])
+        },
+      }
+    ]
+  },
+  postcss: [autoprefixer()],
+  ...
+}
+```
+查看一下抽取出来的样式文件便可以发现已经加上了前缀
+```css
+a {
+    display: flex;
+}
+/*compiles to:*/
+a {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex
+}
+```
+另外autoprefixer还可以根据目标浏览器版本生成不同的前缀个数，例如你的应用的使用用户如果大多数是使用比较新版本的浏览器，那么便可以做如下配置。
+```
+postcss: [autoprefixer({ browsers: ['last 2 versions'] })]
+```
+这是生成的样式便会有些不一样，还是上面的例子
+```css
+a {
+    display: flex;
+}
+/*compiles to:*/
+a {
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+}
+```
+
+### 样式压缩
+压缩代码我们可以使用webpack的内置插件UglifyJsPlugin来做，它既可以压缩js代码也可以压缩css代码。
+```javascript
+plugins: [
+  ...
+  new webpack.optimize.UglifyJsPlugin({
+    compress: {
+      warnings: false
+    }
+  }),
+  ...
+]
+```
+其实并不能说是在压缩css代码，本质来说还是压缩js代码，再将这块代码输出到css文件中。
+
 ### 补充一下
 根据webpack官网中关于[stylesheet](http://webpack.github.io/docs/stylesheets.html)的说法，建议是不要将allChunks设为true，即只是将样式嵌入到分离文件中。  
 这个可能还是需要具体问题具体分析了。
+
+
 
 另外，我们可以使用CommonsChunkPlugin插件，将共有的样式抽取成独立样式文件，common.css，可以减少样式文件的大小。
