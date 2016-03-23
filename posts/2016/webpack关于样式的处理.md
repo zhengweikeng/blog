@@ -168,6 +168,57 @@ a {
 }
 ```
 
+### postcss后记
+这里再说一个问题，有些童鞋可能会在css文件中使用@import引入其他样式文件，但是使用autoprefixer发现，import进来的样式没有处理，如下面所示：
+```css
+/*myStyle.css:*/
+body {
+  background-color: gray;
+}
+.flex {
+  display: flex;
+}
+
+/*myStyle2.css:*/
+@import "./myStyle.css";
+.div {
+  color: red;
+}
+
+/*autoprefixer之后*/
+body {
+  background-color: gray;
+}
+.flex {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+}
+body {
+  background-color: gray;
+}
+.flex {
+  display: flex;
+}
+.div {
+  color: red;
+}
+```
+要解决这个问题，postcss有个[解释](https://github.com/postcss/postcss-loader#integration-with-postcss-import)，它让我们使用[postcss-import](https://github.com/postcss/postcss-import)插件，再配合autoprefixer
+```javascript
+postcss: function(webpack) {
+  return [
+    postcssImport({
+      addDependencyTo: webpack
+    }),
+    autoprefixer
+  ]
+},
+```
+其实我们是不推荐使用@import的，心细的童鞋可以看到最后生成的样式文件有样式是重复的。  
+所以一般我们应该是在js中使用require来引入样式文件。可以参考的说法[这里](https://github.com/postcss/postcss-loader/issues/35)
+
 ### 样式压缩
 压缩代码我们可以使用webpack的内置插件UglifyJsPlugin来做，它既可以压缩js代码也可以压缩css代码。
 ```javascript
@@ -183,6 +234,59 @@ plugins: [
 ```
 其实并不能说是在压缩css代码，本质来说还是压缩js代码，再将这块代码输出到css文件中。
 
+### 使用[CommonsChunkPlugin](http://webpack.github.io/docs/list-of-plugins.html#commonschunkplugin)抽取公共代码
+首先要明确一点CommonsChunkPlugin是在有多个entry时使用的，即在有多个入口文件时，这些入口文件可能会有一些共同的代码，我们便可以将这些共同的代码抽取出来成独立的文件。明白这一点非常重要。（搞了很久才明白的一点，唉～～～～）
+
+如果在多个entry中require了相同的css文件，我们便可以使用CommonsChunkPlugin来将这些共同的样式文件抽取出来为独立的样式文件。
+```javascript
+module.exports = {
+  entry: {
+    "A": "./src/entry.js",
+    "B": "./src/entry2.js"
+  },
+  ...
+  plugins: [
+    new webpack.optimize.CommonsChunkPlugin({name: "commons", filename: "commons.js"}),
+    ...
+  ]
+}
+```
+当然，这里不止会抽取共同的css，如果有共同的js代码，也会抽取成为commons.js。  
+这里有个有趣的现象，抽取出来的css文件的命名将会是参数中name的值，而js文件名则会是filename的值。
+
+CommonsChunkPlugin好像只会将所有chunk中都共有的模块抽取出来，如果存在如下的依赖
+```javascript
+// entry1.js
+var style1 = require('./style/myStyle.css')
+var style2 = require('./style/style.css')
+
+// entry2.js
+require("./style/myStyle.css")
+require("./style/myStyle2.css")
+
+// entry3.js
+require("./style/myStyle2.css")
+```
+使用插件后会发现，根本没有生成commons.css文件。
+
+如果我们只需要取前两个chunk的共同代码，我们可以这么做
+```javascript
+module.exports = {
+  entry: {
+    "A": "./src/entry.js",
+    "B": "./src/entry2.js",
+    "C": "./src/entry3.js"
+  },
+  ...
+  plugins: [
+    new webpack.optimize.CommonsChunkPlugin({name: "commons", filename: "commons.js", chunks: ['A', 'B']}),
+    ...
+  ]
+}
+```
+
+
 ### 补充一下
 根据webpack官网中关于[stylesheet](http://webpack.github.io/docs/stylesheets.html)的说法，建议是不要将allChunks设为true，即只是将样式嵌入到分离文件中。  
 这个可能还是需要具体问题具体分析了。
+
