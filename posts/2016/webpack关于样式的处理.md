@@ -186,7 +186,3 @@ plugins: [
 ### 补充一下
 根据webpack官网中关于[stylesheet](http://webpack.github.io/docs/stylesheets.html)的说法，建议是不要将allChunks设为true，即只是将样式嵌入到分离文件中。  
 这个可能还是需要具体问题具体分析了。
-
-
-
-另外，我们可以使用CommonsChunkPlugin插件，将共有的样式抽取成独立样式文件，common.css，可以减少样式文件的大小。
