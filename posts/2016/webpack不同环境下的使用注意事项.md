@@ -23,8 +23,8 @@
 2. 不要尝试去重写那些不兼容的js模块，而是使用imports-loader/exports-loader去让这些模块变得兼容webpack。
 3. 你应该开启devtools，这会让你很方便的在浏览器端进行调试。
 4. 使用ES6模块化的方式进行开发，然后使用babel-loader对其进行解析。
-5. 使用output.library，它可以打包你的组件。
-6. 使用externals来声明一些依赖包。
+5. 如果你是在开发一个js库，如lodash这些，你应该去使用output.library和output.libraryTarget，它可以帮助你依据umd里不同的标准构建代码。
+6. 使用externals来声明一些想用script引入的依赖包。
 7. 启用模块热替换（Hot Module Replacement）实现页面实时自动刷新
 8. 可以写一份webpack的基础配置文件，然后开发和生产的配置文件引用这份基础配置文件。
 9. 使用resolve.root配置你应用中引用的外部模块的路径，也可以减少写很长的引用路径。
