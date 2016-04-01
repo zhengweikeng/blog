@@ -11,20 +11,22 @@ client和server，需要关闭连接，此时client通知server我要关闭连�
 
 接下来以client主动断开与server端的连接为场景来描述整个过程，我们把它分为两个阶段，分别为client端关闭连接和server端关闭连接。
 
-先上图
+先上图  
+![tcp建立连接和释放连接](https://github.com/zhengweikeng/blog/blob/master/posts/2016/images/tcp%E5%BB%BA%E7%AB%8B%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%87%8A%E6%94%BE%E8%BF%9E%E6%8E%A5.png?raw=true)
 
+第一阶段  
 
-第一阶段
 1. 首先client会发送一个FIN包给server（同时还有ack和seq包），这是要告诉server，我已经没有数据要发给你了，此时client处于FIN_WAIT_1状态。接收到FIN包的server处于CLOSE_WAIT的状态。
 2. server发回一个ACK（值为client传过来的seq+1）和seq（值为client传过来的ack的值）给client。client收到server发过来的包后确认关闭连接，此时client处于FIN_WAIT_2。
 
-第二阶段
-1. server在接收到client的FIN后，得知client要断开tcp连接了，于是在发送完ack和seq给client后，自己发送一个FIN包给client（也带有ack和seq包），告诉client我也要断开连接了，此时server处于LAST_ACK状态。
+第二阶段  
+
+1. server在接收到client的FIN后，得知client要断开tcp连接了，于是在发送完ack和seq给client后，自己发送一个FIN包给client（也带有ack和seq包），告诉client我也要断开连接了，此时server处于LAST_ACK状态。  
 2. client接收到server的FIN信息后，会回复server一个ack包，并且会进入TIME_WAIT状态，持续2个MSL（Max Segment Lifetime），这个时间windows下为240s。而server接收到client后便关闭连接。client在指定时间过后仍然没有接收到server的数据，确认server已经没有数据过来，也关闭了连接。
 
 此时双方都进入CLOSED状态。
 
-再来具体看看每一步
+### 分析一下
 
 server在接收到client的FIN后，会返回ACK给client，此时关闭的就是读通道，也就是说不能再从这个连接中读信息了。
 
@@ -42,7 +44,7 @@ FIN_WAIT_1->FIN_WAIT_2->TIME_WAIT->CLOSED
 server:
 CLOSE_WAIT->LAST_ACK->CLOSED
 
-其中有几个关键点需要注意：
+### 其中有几个关键点需要注意：
 
 1. 这个TIME_WAIT的作用是什么？  
    这个[博客](http://www.cnblogs.com/Jessy/p/3535612.html)是这么解释的。
