@@ -1,4 +1,27 @@
-### 连接释放
+### tcp建立连接
+tcp连接的建立需要经历”三次握手“的过程。过程如下
+
+1. client发送SYN包（值为j）以及SEQ包到server端，此时client进入SYN_SEND状态。此为第一次握手。
+2. server端收到SYN包后，发送一个ACK（值为seq+1）确认包和SYN（值为k）给client，此时server进入SYN_RECV状态。此为第二次握手。
+3. client收到SYN+ACK包后，向server发送一个ACK（值为k+1），该包发送完成后，client和server均进入ESTABLISH状态。此为第三次握手。
+
+client和server两端状态变化如下：
+
+client:  
+CLOSED->SYN_SEND->ESTABLISH  
+server:  
+CLOSED->LISTEN->SYN_RECV->ESTABLISH
+
+为什么是3次握手，不是2次或者4次呢？
+
+建立一个可靠的tcp连接，至少是要3次的，既然3次就足够，为什么还要4次。  
+那2次可以么。假设2次就建立连接，那么会出现如下情况。  
+client发送一个A请求，由于网络原因，没有那么快送达server端。此时client便废弃该请求，重新发起请求B，请求B成功送达server端，并得到响应。  
+如果此时便建立连接，若之前的请求A终于到达server端了，由于请求的格式都是正常的，于是也发送响应回去client，而client则认为该请求已经被废弃。于是server端就一直挂着这个请求，造成资源浪费。
+
+因此，才需要让client再发送一次确认给server端，server接收确认后才建立连接，便可以避免这种情况了。
+
+### tcp连接释放
 Tcp释放连接的过程需要经历“四次挥手”的过程，为什么建立连接只需要3次握手，而释放连接需要进行4次挥手呢？
 
 很简单，因为TCP连接是全双工（Full Duplex）的，因此造成了两个方向都需要进行关闭。
