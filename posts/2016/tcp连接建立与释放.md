@@ -100,6 +100,53 @@ CLOSED->SYN_SEND->ESTABLISH->FIN_WAIT_1->FIN_WAIT_2->TIME_WAIT->CLOSED
 server:  
 CLOSED->LISTEN->SYN_RECV->ESTABLISH->CLOSE_WAIT->LAST_ACK->CLOSED
 
+### websocket
+tcp是传输层的协议，tcp三次握手后，应用层协议http也便建立了连接。而对于当今web的发展情况，http仍有许多瓶颈。
+
+1. 一条连接只能发送一个请求。
+2. 请求只能从客户端开始。客户端不可以接收除响应以外的指令。
+3. 请求/响应首部未经压缩发送，首部信息越多延迟越大。
+4. 发送冗长的首部。每次互相发送相同的首部造成较多的浪费。
+5. 可任意选择数据压缩格式。非强制压缩发送。
+
+虽然已经出现了很多解决方案，如ajax、comet，但是他们最终使用的都是http协议，因此也无法从根本上解决这些瓶颈。  
+因此也就诞生了一个新的通信协议,WebSocket协议，一种全双工通信协议。
+
+该通信协议建立在http协议的基础之上，因此连接的发起方仍然是客户端，在http连接建立之后，再将协议升级为webSocket连接，在webSocket连接建立之后，客户度和服务器端都可以主动向对方发送报文信息了。
+
+建立webSocket连接，需要先建立http连接，并在此基础上再进行一次”握手“。
+
+client会发起一个”握手“的请求，请求首部含有upgrade:websocket（还有其他首部，具体看如下示例）。服务器端返回一个101状态码，确认转换协议。完成握手后便可以使用websocket协议进行通信。
+
+Client（request）
+```
+GET /chat HTTP/1.1
+Host: server.example.com
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: AQIDBAUGBwgJCgsMDQ4PEC==
+Origin: http://example.com
+Sec-WebSocket-protocol: chat, superchat
+Sec-WebSocket-Version: 13
+```
+Sec-WebSocket-Key其值采用base64编码的随机16字节长的字符序列，服务器端根据该域来判断client确实是websocket请求而不是冒充的，如http
+Sec-WebSocket-protocol使用的子协议
+Sec-WebSocket-Version该值必须是13
+
+Server（response）
+```
+HTTP/1.1 101 switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Protocol: chat
+```
+Sec-WebSocket-Accept值是由client请求首部中的Sec-WebSocket-Key做SHA-1 hash计算，然后再把得到的结果通过base64加密而来
+
+连接建立后，通信的url格式如下：  
+ws://example.com/  
+wss://example.com/
+
 #### 参考资料
 1. [TCP的三次握手(建立连接）和四次挥手(关闭连接）](http://www.cnblogs.com/Jessy/p/3535612.html)
 2. [服务器TIME_WAIT和CLOSE_WAIT详解和解决办法](http://www.cnblogs.com/sunxucool/p/3449068.html)
