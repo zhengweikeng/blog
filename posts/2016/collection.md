@@ -7,14 +7,15 @@
 
 ### Node.js
 [如何定位 Node.js 的内存泄漏](http://web.jobbole.com/85684/)  
-[5个提高Node.js应用性能的技巧](https://blog.maxleap.cn/archives/512)
+[5个提高Node.js应用性能的技巧](https://blog.maxleap.cn/archives/512)  
 [国内Nodejs 2015汇总](https://cnodejs.org/topic/5696e43e6272216e51bff67e)  
 [module.exports与exports](http://www.tuicool.com/articles/QnANB3)
 
-### HTTP、tcp/ip
-[谈谈HTTP协议中的短轮询、长轮询、长连接和短连接](http://web.jobbole.com/85541/)
-[HTTP访问控制(CORS)](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS#Requests_with_credentials)  
-[关于跨域,以及跨域的几种方式](http://www.tuicool.com/articles/n2UFJja)
+### network
+[谈谈HTTP协议中的短轮询、长轮询、长连接和短连接](http://web.jobbole.com/85541/)  
+[HTTP访问控制(CORS)](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS#Requests_with_credentials)    
+[关于跨域,以及跨域的几种方式](http://www.tuicool.com/articles/n2UFJja)  
+[关于启用 HTTPS 的一些经验分享（一）](https://imququ.com/post/sth-about-switch-to-https.html)
 
 ### performence
 [大公司里怎样开发和部署前端代码？](https://github.com/fouber/blog/issues/6)  
@@ -23,11 +24,15 @@
 [再记：浏览器缓存200（from cache）和304小结](http://www.laoono.com/s-db/55.html)  
 [使用应用缓存](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache)
 [透过浏览器看HTTP缓存](http://www.admin10000.com/document/6299.html)  
-[影响网页渲染的关键！](http://www.html-js.com/article/2947)
+[影响网页渲染的关键！](http://www.html-js.com/article/2947)  
+[使用Chrome DevTools的Timeline分析页面性能](https://segmentfault.com/a/1190000003991459)
 
 ### vendor
 [大前端工具集](https://github.com/nieweidong/fetool?hmsr=toutiao.io&utm_medium=toutiao.io&utm_source=toutiao.io)  
 [SegmentFault 2015 优质收藏夹](https://segmentfault.com/bookmark/1230000004333620)
 
 ### Architecture
-[性能架构](http://yogoup.sinaapp.com/)
+[性能架构](http://yogoup.sinaapp.com/)   
+
+### tools
+[深入理解学习Git工作流（git-workflow-tutorial）](https://segmentfault.com/a/1190000002918123)
