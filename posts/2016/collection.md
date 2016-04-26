@@ -7,3 +7,6 @@
 
 ### HTTP
 [谈谈HTTP协议中的短轮询、长轮询、长连接和短连接](http://web.jobbole.com/85541/)
+
+### performence
+[大公司里怎样开发和部署前端代码？](https://github.com/fouber/blog/issues/6)
