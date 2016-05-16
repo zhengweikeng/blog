@@ -32,7 +32,11 @@
 [SegmentFault 2015 优质收藏夹](https://segmentfault.com/bookmark/1230000004333620)
 
 ### Architecture
-[性能架构](http://yogoup.sinaapp.com/)   
+[性能架构](http://yogoup.sinaapp.com/)  
+[互联网服务端技术——如何学（上）](https://mp.weixin.qq.com/s?__biz=MzA3MDExNzcyNA==&mid=2650392029&idx=1&sn=2d8a3bb30abd18f6cb204a010b7fac20&scene=1&srcid=05164zARcZqUOmb4ywebtiXf&key=b28b03434249256b29e6735691417eef182a268410030446d2433c59cda66a44a22013798ffc721b47b8db096918b650&ascene=0&uin=MjgzMzY2ODAwNA%3D%3D&devicetype=iMac+Macmini6%2C1+OSX+OSX+10.11.4+build(15E65)&version=11020201&pass_ticket=yXtGZDBbmXtfgyf9EuMjqwJ7MKltUnZw6IeYno%2FiBlGBzopQgmWGlubzxm9rF4EH)    
+[互联网服务端技术——如何学（中）](https://mp.weixin.qq.com/s?__biz=MzA3MDExNzcyNA==&mid=2650392032&idx=1&sn=1174dd5e4b3a4c2087fa53bcc4ad0724&scene=1&srcid=0516dFbEokTWVb1tc4jxISBs&key=b28b03434249256ba9cc8b8a090b1bb8f9c6a3188c94f769c9e6fbecc25eaa7d939ff29a78166a954defb0a64c9b4bc0&ascene=0&uin=MjgzMzY2ODAwNA%3D%3D&devicetype=iMac+Macmini6%2C1+OSX+OSX+10.11.4+build(15E65)&version=11020201&pass_ticket=yXtGZDBbmXtfgyf9EuMjqwJ7MKltUnZw6IeYno%2FiBlGBzopQgmWGlubzxm9rF4EH)  
+[互联网服务端技术——如何学（下A）](https://mp.weixin.qq.com/s?__biz=MzA3MDExNzcyNA==&mid=2650392038&idx=1&sn=768b5190892caeeac0b718cb7b892575&scene=1&srcid=0516keqzbeolbjVlhWEJV7UY&key=b28b03434249256bfe1caba64195c6d6675b1366fec392a4abf8c98d7c12aae21d7ebd03efd34a1ded5a0c7fb7670b01&ascene=0&uin=MjgzMzY2ODAwNA%3D%3D&devicetype=iMac+Macmini6%2C1+OSX+OSX+10.11.4+build(15E65)&version=11020201&pass_ticket=yXtGZDBbmXtfgyf9EuMjqwJ7MKltUnZw6IeYno%2FiBlGBzopQgmWGlubzxm9rF4EH)  
+[互联网服务端技术——如何学（下B）](http://mp.weixin.qq.com/s?__biz=MzA3MDExNzcyNA==&mid=2650392056&idx=1&sn=0e0cd289b852d41567e475d911763e63&scene=0#wechat_redirect)
 
 ### tools
 [深入理解学习Git工作流（git-workflow-tutorial）](https://segmentfault.com/a/1190000002918123)
