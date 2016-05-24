@@ -9,7 +9,8 @@
 [如何定位 Node.js 的内存泄漏](http://web.jobbole.com/85684/)  
 [5个提高Node.js应用性能的技巧](https://blog.maxleap.cn/archives/512)  
 [国内Nodejs 2015汇总](https://cnodejs.org/topic/5696e43e6272216e51bff67e)  
-[module.exports与exports](http://www.tuicool.com/articles/QnANB3)
+[module.exports与exports](http://www.tuicool.com/articles/QnANB3)  
+[Node.js HTTP 使用详解](http://my.oschina.net/antianlu/blog/228511)
 
 ### network
 [谈谈HTTP协议中的短轮询、长轮询、长连接和短连接](http://web.jobbole.com/85541/)  
