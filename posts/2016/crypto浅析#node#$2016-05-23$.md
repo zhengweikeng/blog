@@ -155,6 +155,98 @@ verify.verify(pubKey, sig, 'utf8')
 ```
 上述过程就是，通过传递过来的签名后的数据，使用对方的公钥进行解密，将解密后的数据和原始数据进行比对。
 
+## Diffie–Hellman key exchange(迪菲－赫尔曼密钥交换)
+它可以让双方在完全没有对方任何预先信息的条件下通过不安全信道创建起一个密钥。提出这种加密方式的两个人迪菲和赫尔曼也是图灵奖的获得者。
+
+创建DiffieHellman类的方法有如下两个
+```javascript
+crypto.createDiffieHellman(prime[, prime_encoding][, generator][, generator_encoding])
+crypto.createDiffieHellman(prime_length[, generator])
+```
+也即可以通过传入一个素数或者素数长度、结合生成器（不传则为2）因素来产生一个DiffieHellman类实例。
+```javascript
+var alice = crypto.createDiffieHellman(2048)
+```
+### [diffieHellman.generateKeys([encoding])](https://nodejs.org/dist/latest-v6.x/docs/api/crypto.html#crypto_diffiehellman_generatekeys_encoding)
+用于生成一个私钥和公钥的键值对，根据指定的编码返回一个公钥。该公钥将会传递给另外一方，用于对称加密。
+```javascript
+const alice_key = alice.generateKeys()
+```
+### [diffieHellman.getPrime([encoding])](https://nodejs.org/dist/latest-v6.x/docs/api/crypto.html#crypto_diffiehellman_getprime_encoding)
+获取创建diffieHellman实例的素数
+```javascript
+const alice_prime = alice.getPrime()
+```
+### [diffieHellman.getGenerator([encoding])](https://nodejs.org/dist/latest-v6.x/docs/api/crypto.html#crypto_diffiehellman_getgenerator_encoding)
+获取创建diffieHellman实例的生成数
+```javascript
+const alice_generator = alice.getGenerator()
+```
+### [diffieHellman.getPrivateKey([encoding])](https://nodejs.org/dist/latest-v6.x/docs/api/crypto.html#crypto_diffiehellman_getprime_encoding) and [diffieHellman.getPublicKey([encoding])](https://nodejs.org/dist/latest-v6.x/docs/api/crypto.html#crypto_diffiehellman_getpublickey_encoding)
+获取私钥和公钥
+### [diffieHellman.setPrivateKey(private_key[, encoding])](https://nodejs.org/dist/latest-v6.x/docs/api/crypto.html#crypto_diffiehellman_setprivatekey_private_key_encoding) and [diffieHellman.setPublicKey(public_key[, encoding])](https://nodejs.org/dist/latest-v6.x/docs/api/crypto.html#crypto_diffiehellman_setpublickey_public_key_encoding)
+设置私钥和公钥
+### [diffieHellman.computeSecret(other_public_key[, input_encoding][, output_encoding])](https://nodejs.org/dist/latest-v6.x/docs/api/crypto.html#crypto_diffiehellman_computesecret_other_public_key_input_encoding_output_encoding)
+根据另外一个diffieHellman实例生成的公钥来计算生成一个密文。
+```javascript
+const bob = crypto.createDiffieHellman(alice_prime, alice_generator)
+const bob_key = bob.generateKeys()
+
+const alice_secret = alice.computeSecret(bob_key)
+const bob_secret = alice.computeSecret(alice_key)
+
+// alice_secret === bob_secret    
+// true
+```
+### [crypto.getDiffieHellman(group_name)](https://nodejs.org/dist/latest-v6.x/docs/api/crypto.html#crypto_crypto_getdiffiehellman_group_name)
+这是另外一种创建DiffieHellman实例的方式，不过有些不同。它可以根据‘modp1’, ‘modp2’, ‘modp5’ (defined in RFC 2412) and ‘modp14’, ‘modp15’, ‘modp16’, ‘modp17’, ‘modp18’ (defined in RFC 3526)来创建实例。
+
+它创建后不能改变公钥和私钥。
+
+使用它的优点是通常就是直接使用它不用交换生成key，只需要在握手前使用一样的group系数即可，节约了大家的处理时间和握手时间。
+```javascript
+var alice = crypto.getDiffieHellman('modp5')
+var bob = crypto.getDiffieHellman('modp5')
+
+alice.generateKeys()
+bob.generateKeys()
+
+var alice_secret = alice.computeSecret(bob.getPublicKey(), 'binary', 'hex')
+var bob_secret = bob.computeSecret(alice.getPublicKey(), 'binary', 'hex')
+
+// alice_secret === bob_secret    
+// true
+```
+还有一种Elliptic Curve Diffie-Hellman(ECDH)的加密算法，用法都是一样的。
+
+## crypto.pbkdf2()
+我们知道md5这种哈希算法很容易通过彩虹表的方式破解，因此我们需要对我们的密码进行加盐后再加密。
+
+上面我们知道node提供了我们hmac这种加盐api，但是我们可以更加简化操作，使用pbkdf2函数来做
+```javascript
+var text = 'hello world'
+var salt = '123456789abcdefg'
+
+crypto.pbkdf2(text, salt, 4096, 256, 'md5', (err, hash) => {
+  if (err) { throw err; }
+  console.log(hash.toString('hex'));
+})
+// bd99d067b97fc642c77e327909281c4ad1...
+```
+当然，如果我们每次加盐都是使用一样的salt，也是会有不安全的成分，所以我们可以生成一个随机salt。
+```javascript
+var text = 'hello world'
+crypto.randomBytes(128, (err, salt) => {
+  if (err) { throw err;}
+  console.log(salt)
+  
+  crypto.pbkdf2(text, salt, 4096, 256, 'md5', (err, hash) => {
+    if (err) { throw err; }
+    console.log(hash.toString('hex'));
+  })
+})
+```
+
 ## 参考文章
 [Node.js加密算法库Crypto](http://blog.fens.me/nodejs-crypto/)  
 [浅谈nodejs中的Crypto模块](https://cnodejs.org/topic/504061d7fef591855112bab5)
