@@ -209,4 +209,21 @@ double为双精度，数值最大为64位；而float为单精度，数值最大�
 
 因此我们应该充分利用这些特点来读写数据，充分利用我们的空间。  
 
+#### 6.0开始的Buffer
+从6.0开始的node，不再推荐使用`new Buffer`的这种方式来创建Buffer对象，这种方式会存在内存泄漏的问题。应该使用如下方式来创建：
+```javascript
+const buff = Buffer.alloc(10)
+
+//相当于
+const buff = new Buffer(10)
+buff.fill(0)
+```
+alloc即为申请n个字节的内存空间
+
+同时6.0还提供了其他创建Buffer的api。
+
+Buffer.allocUnsafe，很明显这种方式创建的Buffer对象也是不安全的，数据可能是之前已经存在的旧数据。
+
+Buffer.from也是一种方式，可以根据创建包含指定字符串的Buffer对象。
+
 这里有一篇关于读写数值的[文章](https://cnodejs.org/topic/56499568d28aa64101600fdc)值得一看
