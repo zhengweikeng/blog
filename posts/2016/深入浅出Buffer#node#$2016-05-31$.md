@@ -226,4 +226,5 @@ Buffer.allocUnsafe，很明显这种方式创建的Buffer对象也是不安全�
 
 Buffer.from也是一种方式，可以根据创建包含指定字符串的Buffer对象。
 
-这里有一篇关于读写数值的[文章](https://cnodejs.org/topic/56499568d28aa64101600fdc)值得一看
+这里有一篇关于读写数值的[文章](https://cnodejs.org/topic/56499568d28aa64101600fdc)值得一看  
+6.0的用户也可以看看[这篇](https://segmentfault.com/a/1190000005368752)
