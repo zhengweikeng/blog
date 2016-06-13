@@ -40,7 +40,8 @@
 [互联网服务端技术——如何学（下B）](http://mp.weixin.qq.com/s?__biz=MzA3MDExNzcyNA==&mid=2650392056&idx=1&sn=0e0cd289b852d41567e475d911763e63&scene=0#wechat_redirect)
 
 ### tools
-[深入理解学习Git工作流（git-workflow-tutorial）](https://segmentfault.com/a/1190000002918123)
+[深入理解学习Git工作流（git-workflow-tutorial）](https://segmentfault.com/a/1190000002918123)  
+[高质量的Git中文教程](https://github.com/geeeeeeeeek/git-recipes)
 
 ### nginx
 [网上最全面nginx教程（近100篇文章整理）](http://bbs.linuxtone.org/thread-25588-1-1.html)
