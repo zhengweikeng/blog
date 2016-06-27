@@ -45,3 +45,10 @@
 
 ### nginx
 [网上最全面nginx教程（近100篇文章整理）](http://bbs.linuxtone.org/thread-25588-1-1.html)
+
+### github
+[awesome-command-line-apps](https://github.com/herrbischoff/awesome-command-line-apps)
+
+### nice site
+[www.freecodecamp.com](https://www.freecodecamp.com/)  
+[freecodecamp.cn](https://www.freecodecamp.com/)
