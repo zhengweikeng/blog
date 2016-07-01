@@ -1,6 +1,6 @@
 ### $和$()和${}的区别
 当定义一个变量后，即可用$变量名，取得该变量的值。若需要获取一个命令后的结果作为值，可以采用$()，而${}在一些连接字符串时会经常用到
-```
+```bash
 #变量名和变量值不能存在空格
 name=tom
 echo $name
@@ -29,7 +29,7 @@ declare [-aixr] variable
 -i：将变量定义成为integer类型  
 -x：用法与export一样，就是将变量变成环境变量；   
 -r：将变量配置成为readonly类型，该变量不可被更改内容，也不能unset
-```
+```bash
 sum=100+200+300
 echo $sum   # 100+200+300
 declare -i sum=100+200+300
@@ -226,3 +226,33 @@ $@ 是传给脚本的所有参数的列表
 $* 是以一个单字符串显示所有向脚本传递的参数，与位置变量不同，参数可超过9个  
 $$ 是脚本运行的当前进程ID号  
 $? 是显示最后命令的退出状态，0表示没有错误，其他表示有错误
+
+有如下脚本文件，test.sh
+```bash
+#!/bin/bash
+
+echo "The script name is ==> $0"
+echo "Total parameter number is ==> $#"
+echo "Your whole parameter is ==> $@"
+
+echo "The 1st param ===> $1"
+echo "The 2nd param ===> $2"
+
+shift
+echo "Your whole parameter is ==> $@"
+
+shift 3
+echo "Your whole parameter is ==> $@"
+```
+运行`./test.sh aa bb cc dd ee ff gg`  
+结果如下：
+```
+The script name is ==> ./test.sh
+Total parameter number is ==> 7
+Your whole parameter is ==> aa bb cc dd ee ff gg
+The 1st param ===> aa
+The 2nd param ===> bb
+Your whole parameter is ==> bb cc dd ee ff gg
+Your whole parameter is ==> ee ff gg
+```
+注意到这里有个shift的命令，它可以拿掉最前面的n个参数
