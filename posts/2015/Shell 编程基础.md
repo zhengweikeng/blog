@@ -118,30 +118,26 @@ else
    ...
 fi
 ```
-大多数情况下，可以使用测试命令来对条件进行测试，比如可以比较字符串、判断文件是否存在及是否可读等等……通常用" [ ] "来表示条件测试，注意这里的空格很重要，要确保方括号前后的空格。  
-[ -f "somefile" ] ：判断是否是一个文件  
-[ -x "/bin/ls" ] ：判断/bin/ls是否存在并有可执行权限  
-[ -n "$var" ] ：判断$var变量是否有值  
-[ "$a" = "$b" ] ：判断$a和$b是否相等(注意只有一个等号)
-```
+一般情况下，我们都会使用上述测试命令，即[]中写表达式的方式来写条件语句，不过我们一般不会在[]里面写多个表达式，而是会放在外部，写多个[]的方式。
+```bash
 #!/bin/bash
 read -p "please input (y/n):" yn
 
 if [ "$yn" = "y" ] || [ "$yn" = "Y" ]; then
-  echo "ok!continue"
-  exit 0
+   echo "ok!continue"
+   exit 0
 elif [ "$yn" = "n" ] || [ "$yn" = "N" ]; then
-  echo "oh!interrupt"
-  exit 0
+   echo "oh!interrupt"
+   exit 0
+eles
+   echo "I don't know what you are input"
+   exit 0
 fi
-
-echo "I don't know what you are input"
-exit 0
 ```  
 
 ### case语句
 case表达式可以用来匹配一个给定的字符串，而不是数字
-```
+```bash
 case ... in
    ...
    ;;
@@ -186,34 +182,53 @@ You have selected Linux
 ```
 
 ### while和for循环
+第一种循环方式：while do done, until do done (不定循环)
+```bash
+while [ "$yn" != "yes" ] && [ "$yn" != "YES" ]
+do
+  read -p "Please input yes/YES to stop this program: " yn
+done
+
+echo "go next"
+
+until [ "$yn" != "yes" ] && [ "$yn" != "YES" ]
+do 
+  read -p "Please input yes/YES to stop this program: " yn
+done
 ```
-while ...; do
-  ...
+第二种循环： for...do...done (固定循环)
+形态1：
+```bash
+# exp1
+for animal in dog cat elephant
+do
+  echo "The annimal is $animal"
 done
 
-for ... in ...; do
-   ...
-done
+# exp2
+network="192.168.19.1"
+for site in $(seq 1 100)
+do
+  ping -c 1 -w ${network}.${site} &> /etc/null && result=0 || result=1
 
+  if [ "$result" == 0 ]; then
+    echo "Server ${network}.${site} is UP"
+  else
+    echo "Server ${network}.${site} is DOWN"
+  fi
+done
+```
+形态2
+```bash
 for (( 初始值; 限制值; 运行步阶 ))
 do
     程序段
 done
 
-for rpmpackage in "$@"; do
-   if [ -r "$rpmpackage" ];then
-      echo "=============== $rpmpackage =============="
-      rpm -qi -p $rpmpackage
-   else
-      echo "ERROR: cannot read file $rpmpackage"
-   fi
-done
-# $@表示你传入的所有参数
-
-# zsh和dash会报错，建议使用上一种
-for (( i=1; i<=$nu; i=i+1 ))
+s=0
+for ((i=1; i<=100; i=i+1))
 do
-    s=$(($s+$i))
+  echo $(( $s+ $i ))
 done
 ```
 
@@ -256,3 +271,12 @@ Your whole parameter is ==> bb cc dd ee ff gg
 Your whole parameter is ==> ee ff gg
 ```
 注意到这里有个shift的命令，它可以拿掉最前面的n个参数
+
+### 函数
+shell也有函数的概念
+```bash
+function printIt(){
+   echo "print it: $1"
+}
+```
+函数也是有内建变量，只不过是相对于函数的
