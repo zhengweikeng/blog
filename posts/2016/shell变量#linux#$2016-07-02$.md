@@ -77,6 +77,7 @@ echo $path2
 
 ### 变量值的决定
 可以通过变量值的情况决定该变量的值
+
 ![变量值的决定](https://raw.githubusercontent.com/zhengweikeng/blog/master/posts/2016/images/%E5%8F%98%E9%87%8F%E5%80%BC%E7%9A%84%E5%86%B3%E5%AE%9A.jpg)
 ```bash
 unset user
