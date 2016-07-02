@@ -29,7 +29,7 @@ grep -E "root|nologin" /etc/passwd
 cat /etc/passwd | grep -E "root|nologin"
 
 # 与运算
-grep nologin /etc/passwd | greo man
+grep nologin /etc/passwd | grep man
 # or
 cat /etc/passwd | grep nologin | grep man
 ```
@@ -101,4 +101,65 @@ grep 'o\{2,5\}' test.sh
 # egrep '3+' testfile
 # grep -E '3+' testfile
 # grep '3\+' testfile 
+```
+
+### 数据流导向
+一般情况下，我们的每一条命令都是输出到屏幕上，我们也可以通过流导向将数据输出到指定的东西。
+1. 标准输入(stdin)：代码为0，使用<或者<<
+2. 标准输出(stdout)：代码为1，使用>或者>>
+3. 标准错误输出(stderr)：代码为2，使用2>或者2>>
+
+```bash
+# 将结果输出到profile文件。此时文件内容是全部被清空后重新写入
+ls / > ./profile
+
+# 不同于上方，这可以实现内容追加，而不是清空重写
+ls / >> ./profile
+```
+
+我们还可以一条命令的错误信息导向文件，将正确信息导向另外的一个文件
+```bash
+find /home --name .bashrc > list_right 2> list_err
+```
+这里假设一个用户没有权限查看其他用户的home
+
+#### /etc/null
+我们可以将错误信息直接忽略掉，不输出也不写入文件。这时便可以使用垃圾桶黑洞装置
+```bash
+find /home --name .bashrc > list_right 2> /etc/null
+```
+
+#### 将正确的和错误的都输入同一个文件
+```bash
+# 错误
+find /home --name .bashrc > list 2> list
+
+# 正确
+find /home --name .bashrc > list 2> &1
+
+# 正确
+find /home --name .bashrc &> list
+```
+
+### cut
+cut -d '分割字符' -f fields
+```bash
+test=t1:t2:t3:t4
+
+echo $test | cut -d ':' -f 2
+# t2
+```
+
+cut -c 字符区间
+```bash
+test=helloworld
+
+echo $test | cut -c 6
+# w
+
+echo $test | cut -c 6-
+# world
+
+echo $test | cut -c 6-8
+# wor
 ```
