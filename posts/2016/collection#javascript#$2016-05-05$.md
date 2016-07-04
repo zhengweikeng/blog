@@ -3,7 +3,8 @@
 [前端知识普及之页面加载](https://segmentfault.com/a/1190000004466407)  
 [图文解说 JavaScript this 到底指向什么？](http://www.codeceo.com/article/javascript-this-point.html)  
 [浅谈js之闭包](http://www.tuicool.com/articles/QnaU3e)  
-[深入浅出的javascript的正则表达式学习教程](http://web.jobbole.com/84450/)
+[深入浅出的javascript的正则表达式学习教程](http://web.jobbole.com/84450/)  
+[使用JavaScript进行运动检测](http://www.zcfy.cc/article/coders-block-blog-motion-detection-with-javascript-732.html)
 
 ### Node.js
 [如何定位 Node.js 的内存泄漏](http://web.jobbole.com/85684/)  
