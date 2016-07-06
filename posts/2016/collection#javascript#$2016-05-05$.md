@@ -13,6 +13,9 @@
 [module.exports与exports](http://www.tuicool.com/articles/QnANB3)  
 [Node.js HTTP 使用详解](http://my.oschina.net/antianlu/blog/228511)
 
+### web
+[HTML 5 视频直播一站式扫盲](http://mp.weixin.qq.com/s?__biz=MzA3NTYzODYzMg==&mid=2653577297&idx=1&sn=a292ff3b499168f4eb589e40b7aa6d13&scene=4#wechat_redirect)
+
 ### network
 [谈谈HTTP协议中的短轮询、长轮询、长连接和短连接](http://web.jobbole.com/85541/)  
 [HTTP访问控制(CORS)](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS#Requests_with_credentials)    
