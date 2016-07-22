@@ -46,7 +46,8 @@
 
 ### tools
 [深入理解学习Git工作流（git-workflow-tutorial）](https://segmentfault.com/a/1190000002918123)  
-[高质量的Git中文教程](https://github.com/geeeeeeeeek/git-recipes)
+[高质量的Git中文教程](https://github.com/geeeeeeeeek/git-recipes)  
+[ELKstack 中文指南](http://kibana.logstash.es/content/)
 
 ### nginx
 [网上最全面nginx教程（近100篇文章整理）](http://bbs.linuxtone.org/thread-25588-1-1.html)
