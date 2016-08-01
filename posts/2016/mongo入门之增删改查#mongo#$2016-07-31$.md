@@ -287,3 +287,167 @@ db.user.save(x)
 ```javascript
 db.user.update({birthday: "07/31/2016"}, {"$set": {age: 22}}, false, true)
 ```
+
+### find基本用法
+find(condi)根据特定条件查询
+```javascript
+db.users.find({name: 'jim'})
+
+{
+  _id: ObjectId("..."),
+  name: "jim",
+  age: 22,
+  sex: male
+}
+```
+也可以只返回指定的键
+```javascript
+db.users.find({name: 'jim'}, {name: 1, age: 1})
+
+{
+  _id: ObjectId("..."),
+  name: "jim",
+  age: 22
+}
+```
+默认情况下，_id一定会被返回。我们可以指定某个键不被返回，利用这个特性可以不返回\_id
+```javascript
+db.users.find({name: 'jim'}, {sex: 0, _id: 0})
+
+{
+  name: "jim",
+  age: 22
+}
+```
+
+### 查询条件
+$lt、$lte、$gt、$gte分别代表了<、<=、>、>=。
+```javascript
+db.users.find({age: {"$gt": 20, "$lt": 30}})
+```
+还有一个$ne，代表不等于
+```javascript
+db.users.find({name: {"$ne": "tim"}})
+```
+
+#### or查询
+$in用于查询单个键的多个值，与之相反的是$nin
+```javascript
+db.users.find({name: {"$in": ["tim", "tom"]}})
+db.users.find({name: {"$nin": ["tim", "tom"]}})
+```
+$or用于查询多个键
+```javascript
+db.users.find({"$or": [{name: "tim"}, {age: {"$in": [20, 22]}}]})
+```
+
+#### not语句
+```javascript
+// $mod取模，第一个参数是除以给定值，第二个参数是余数
+db.users.find({"id_num": {"$mod": [5, 1]}})
+db.users.find({"id_num": {"$not": {"$mod": [5, 1]}}})
+```
+
+### 特定类型的查询
+#### null
+查询为null的记录
+
+```javascript
+db.users.find({male: null})
+```
+但是如果该指定的键在文档中不存在，文档会被查询出来。因此需要指定exists字段
+```javascript
+db.users.find({male: {"$in": [null], "$exists": true}})
+```
+#### 支持正则表达式
+```javascript
+db.users.find({name: /joe/i})
+```
+
+### 数组查询
+当有这样一个文档
+```javascript
+db.food.insert({fruits: ['apple', 'banana', 'orange']})
+
+db.food.find({fruits: 'banana'})
+{
+  _id: ObjectId(xxxx)
+  fruits: ['apple', 'banana', 'orange']
+}
+```
+这会查询到拥有banana的记录，想要绝对匹配，则需要指定为数组
+
+```javascript
+db.food.insert({fruits: ['apple', 'banana', 'orange']})
+db.food.insert({fruits: ['apple', 'banana', 'cherry']})
+
+db.food.find({fruits: ['apple', 'banana', 'orange']})
+{
+  _id: ObjectId(xxxx)
+  fruits: ['apple', 'banana', 'orange']
+}
+```
+可以指定从数组的某个下标开始查询
+```javascript
+db.food.insert({fruits: ['apple', 'banana', 'orange']})
+db.food.insert({fruits: ['apple', 'banana', 'cherry']})
+
+db.food.find({"fruits.2": "banana"})
+```
+
+#### $all
+通过多个元素匹配数组
+```javascript
+db.food.insert({fruits: ['apple', 'banana', 'orange']})
+db.food.insert({fruits: ['apple', 'kumquat', 'orange']})
+db.food.insert({fruits: ['cherry', 'banana', 'apple']})
+
+db.food.find({fruits: {"$all": ["apple", "banana"]}})
+{
+  _id: ObjectId(xxxx)
+  fruits: ['apple', 'banana', 'orange']
+}
+{
+  _id: ObjectId(xxxx)
+  fruits: ['cherry', 'banana', 'banana']
+}
+```
+
+#### $size
+```javascript
+db.food.insert({fruits: ['apple', 'banana', 'orange']})
+db.food.insert({fruits: ['apple', 'banana']})
+
+db.food.find({"fruits": {"$size": 3}})
+{
+  _id: ObjectId(xxxx)
+  fruits: ['apple', 'banana', 'orange']
+}
+```
+
+#### $slice
+查询的第二个参数，可以返回指定的键，而使用slice可以返回数组中指定位置的值
+```javascript
+db.food.insert({fruits: ['apple', 'banana', 'orange', 'cherry']})
+
+// 返回fruits的前2条记录
+db.food.find({}, {"fruits": {"$slice": 2}})
+{
+  _id: ObjectId(xxxx)
+  fruits: ['apple', 'banana']
+}
+
+// 返回fruits的后2条记录
+db.food.find({}, {"fruits": {"$slice": -2}})
+{
+  _id: ObjectId(xxxx)
+  fruits: ['orange', 'cherry']
+}
+
+// 返回fruits指定位置的记录
+db.food.find({}, {"fruits": {"$slice": [1, 2]}})
+{
+  _id: ObjectId(xxxx)
+  fruits: ['banana', 'orange']
+}
+```
