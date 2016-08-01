@@ -55,7 +55,8 @@
 [网上最全面nginx教程（近100篇文章整理）](http://bbs.linuxtone.org/thread-25588-1-1.html)
 
 ### github
-[awesome-command-line-apps](https://github.com/herrbischoff/awesome-command-line-apps)
+[awesome-command-line-apps](https://github.com/herrbischoff/awesome-command-line-apps)  
+[free-programming-books](https://github.com/vhf/free-programming-books)
 
 ### nice site
 [www.freecodecamp.com](https://www.freecodecamp.com/)  
