@@ -111,7 +111,7 @@ $time_iso8601 ISO8601 标准格式下的本地时间。
 $time_local 通用日志格式下的本地时间
 ```
 
-### access_log
+### access_log 访问日志
 语法: access_log path [format [buffer=size [flush=time]]]  
 默认值: access_log logs/access.log combined;  
 配置段: http, server, location, if in location, limit_except
@@ -121,15 +121,12 @@ buffer 设置内存缓存区大小。
 flush 保存在缓存区中的最长时间。  
 不记录日志:access_log off
 
-### error_log
-配置错误日志
-
+### error_log 配置错误日志
 语法: error_log file | stderr | syslog:server=address[,parameter=value] [debug | info | notice | warn | error | crit | alert | emerg];  
 默认值: error_log logs/error.log error;  
 配置段: main, http, server, location
 
-### rewrite_log
-记录重写日志
+### rewrite_log 记录重写日志
 
 语法: rewrite_log on | off;  
 默认值: rewrite_log off;  
