@@ -133,4 +133,131 @@ flush 保存在缓存区中的最长时间。
 配置段: http, server, location, if  
 启用时将在 error log 中记录 notice 级别的重写日志
 
-未完待续...
+## 虚拟主机配置
+一般来说，我们会将虚拟主机的配置写在另外一个独立的配置文件中，并在nginx.conf中使用include引用
+
+```nginx
+# 定义虚拟主机开始的关键字
+server {
+  # 虚拟主机端口
+  listen 80;
+  # 指定ip或者域名，多个域名用空格隔开
+  server_name 192.168.12.188 www.test.net;
+  # 设定访问的默认首页
+  index index.html index.htm;
+  # 指定虚拟主机的网页根目录
+  root /www/wwwroot/wwww.test.net;
+  # 网页默认的编码格式
+  charset utf8;
+  # 此虚拟主机的访问日志的存放路径
+  access_log logs/www.test.net.access.log main
+
+  # url匹配设置，后续会讲
+  location
+}
+```
+
+## location配置
+语法规则：location [= | ~ | ~* | ^~] /uri/ {...}
+
+1. =为精确匹配，优先级最高的匹配
+2. ~区分大小写的正则匹配
+3. ~*不区分大小写的正则匹配
+4. ^~普通字符匹配，如果此选项匹配成功，忽略其他匹配选项，一般用来匹配目录 
+5. /通用匹配，匹配任何请求，因为所有请求都是以"/"开始
+
+匹配顺序
+1. 首先进行精确匹配，匹配成功则停止其他匹配
+2. ^~匹配
+3. 最后是通用匹配/
+
+例子A
+
+```nginx
+# A
+location = / {...}
+
+# B
+location / {...}
+
+# C
+location ^~ /image/ {...}
+
+# D
+location ~* \.(gif|jpg|jpeg)$ {...}
+```
+
+请求url
+```
+# 匹配A
+/
+
+# 匹配B
+/hello/world
+
+# 匹配C
+/image/hello.gif
+
+# 匹配D
+/hello/world.jpg
+```
+
+例子B
+
+```nginx
+# A
+location / {
+  echo "/"; //需要安装 echo 模块才行,这边大家可以改成各自的规则
+}
+
+#B
+location = / {...}
+
+# C
+location = /hello {...}
+
+# D
+location ~ \.(gif|jpg|png|js|css)$ {...}
+
+# E
+location ~* \.png$ {...}
+
+# F
+location ^~ /static/ {...}
+```
+
+请求url
+```
+# 完全匹配 B
+curl http://www.test.com/
+
+# 完全匹配C
+curl http://www.test.com/hello
+
+# 匹配E
+curl http://www.test.com/world/test.PNG
+
+# 匹配F
+curl http://www.test.com/static/test.jpg
+```
+
+这里顺便说一下root和alias在和location配合使用时的差异
+
+```nginx
+location ~ ^/weblogs/ {
+  root /data/weblogs/www.ttlsa.com; 
+}
+```
+此时若请求为：  
+/weblogs/httplogs/www.ttlsa.com-access.log  
+web服务器将会返回服务器上的/data/weblogs/www.ttlsa.com//weblogs/httplogs/www.ttlsa.com-access.log文件
+
+```nginx
+location ^~ /binapp/ {
+  alias /data/statics/bin/apps/ 
+}
+```
+此时若请求为：  
+/binapp/a.ttlsa.com/favicon  
+web服务器将会返回服务器上的/data/statics/bin/apps/a.ttlsa.com/favicon文件  
+即会舍弃location后的路径
