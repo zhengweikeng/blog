@@ -241,7 +241,7 @@ curl http://www.test.com/world/test.PNG
 curl http://www.test.com/static/test.jpg
 ```
 
-这里顺便说一下root和alias在和location配合使用时的差异
+### location中root和alias的差异
 
 ```nginx
 location ~ ^/weblogs/ {
@@ -261,3 +261,65 @@ location ^~ /binapp/ {
 /binapp/a.ttlsa.com/favicon  
 web服务器将会返回服务器上的/data/statics/bin/apps/a.ttlsa.com/favicon文件  
 即会舍弃location后的路径
+
+### 利用location也可以实现访问控制
+使用ngx_http_access_module可以实现访问控制
+
+限制某些ip的访问
+
+```nginx
+location / {
+  deny 192.168.66.90;
+  allow 192.168.66.91;
+  deny all;
+}
+```
+
+限制访问某个目录
+
+```nginx
+location ~ ^/WEB-INF/ {
+  deny all;
+}
+```
+
+禁止访问doc和txt文件
+
+```nginx
+location ~* \.(txt|doc)$ {
+  root /data/www/wwwroot;
+  deny all;
+}
+```
+
+### 请求代理
+经常会有访问不同域名的将请求代理到不同服务器上
+
+例如
+
+一个网站有两个域名，分别是www.hello.com和w.hello.com。  
+要实现当访问www.hello.com是通过nginx代理到192.168.66.90的8080端口的web上。  
+当访问www.hello.com/admin是通过nginx代理到192.168.66.90的8080端口的admin上。  
+当访问w.hello.com是通过nginx代理到192.168.66.90的8080端口的wap上。
+
+```nginx
+server {
+  listen 80;
+  server_name www.hello.com;
+  location / {
+    proxy_pass 192.168.66.90:8080/web/;
+  }
+  location /admin {
+    proxy_pass 192.168.66.90:8080/admin;
+  }
+}
+
+server {
+  listen 80;
+  server_name w.hello.com;
+  location / {
+    proxy_pass 192.168.66.90:8080/wap/;
+  }
+}
+
+```
