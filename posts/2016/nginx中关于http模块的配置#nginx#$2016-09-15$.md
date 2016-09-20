@@ -323,3 +323,69 @@ server {
 }
 
 ```
+
+## 重写规则rewrite
+可根据一定的规则，由一个location跳转到另外一个location
+
+例如当访问www.helloworld.com时，自动转向www.hw.com
+
+```nginx
+server {
+  server_name www.helloworld.com;
+  rewrite ^/(.*)$ http://www.hw.com/$1 permanent;
+}
+
+# or
+server {
+  server_name www.hw.com www.helloworld.com;
+  if($host != 'www.hw.com') {
+    rewrite ^/(.*)$ http://www.hw.com/$1 permanent;
+  }
+}
+```
+
+### if命令
+判断指令，可以使用如下判断
+
+1. 一个变量的名称:空字符传”“或者一些“0”开始的字符串为 false。
+2. 字符串比较:使用=或!=运算符
+3. 正则表达式匹配:使用~(区分大小写)和~*(不区分大小写),取反运算!~和!~*。 4. 文件是否存在:使用-f 和!-f 操作符
+5. 目录是否存在:使用-d 和!-d 操作符
+7. 文件、目录、符号链接是否存在:使用-e 和!-e 操作符
+8. 文件是否可执行:使用-x 和!-x 操作符
+
+### rewrite
+语法:rewrite regex replacement flag  
+默认值:none  
+使用字段:server, location, if  
+last – 停止处理重写模块指令,之后搜索 location 与更改后的 URI 匹配。  
+break – 完成重写指令。  
+redirect – 返回 302 临时重定向,如果替换字段用 http://开头则被使用。  
+permanent – 返回 301 永久重定向。
+
+### set
+可用于设置一些变量
+
+```nginx
+server {
+  server_name www.hw.com www.helloworld.com;
+  set $query $query_string;
+  rewrite /dede /wordpress?$query
+}
+```
+
+### break
+完成当前设置的规则后，不在匹配后面的重写规则
+
+```nginx
+# or
+server {
+  server_name www.hw.com www.helloworld.com;
+  if($host != 'www.hw.com') {
+    rewrite ^/(.*)$ http://www.hw.com/error.txt break;
+  }
+
+  rewrite ^/(.*) http://www.hw.cn/$1 permanent
+}
+
+```
