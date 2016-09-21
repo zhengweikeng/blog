@@ -389,3 +389,44 @@ server {
 }
 
 ```
+
+## 负载均衡
+通过upstream命令可以实现负载均衡
+
+```nginx
+upstream myserver {
+  server 192.168.12.181:80 weight=3 max_fails=3 fail_timeout=20s;
+  server 192.168.12.182:80 weight=1 max_fails=3 fail_timeout=20s;
+  server 192.168.12.183:80 weight=4 max_fails=3 fail_timeout=20s;
+}
+
+server {
+  listen 80;
+  server_name www.hello.com;
+  index index.html;
+  root /hello/wwwroot/;
+
+  location / {
+    proxy_passs http://myserver;
+    proxy_next_upstream http_500 http_502 http_503 error timeout invalid_header;
+    include /opt/nginx/conf/proxy.conf;
+  }
+}
+```
+
+其中weight为负载均衡的调度算法，还有如下几种算法
+
+轮询（默认算法）  
+weight，权值，值越大分配到的概率越大  
+ip_hash，按ip的哈希结果分配，来自同一台ip的客户端可以固定访问一台机器  
+fair，根据页面和加载的时间长短智能的进行负载均衡。需要下载upstream_fair模块  
+url_hash，按访问url的哈希结果来分配请求。需要安装hash软件包。
+
+max_fails和fail_timeout为服务器在负载均衡调度中的状态，还有如下集中状态
+
+down，当前server暂时不参与负载均衡  
+backup，备份机器。当非backup机器出现故障或者忙的时候，才会请求backup机器  
+max_fails，允许请求失败的次数，默认为1。当超过最大次数，返回proxu_next_upstream模块定义的错误  
+fail_timeoout 在经历了max_fails失败后，暂停服务的时间。
+
+这里配置了proxy_next_upstream会将500、502、503等错误发生时会自动将请求转移到负载均衡中的另外一台机器。
