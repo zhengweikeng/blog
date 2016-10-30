@@ -36,6 +36,8 @@ require('myStyle.css')
 
 我们可以使用插件的方式，将样式抽取成独立的文件。使用的插件就是[extract-text-webpack-plugin](https://github.com/webpack/extract-text-webpack-plugin)
 
+目前该插件2.0版本的api有一些变化，这里还是用了1.0的api
+
 基本用法如下
 ```javascript
 var ExtractTextPlugin = require("extract-text-webpack-plugin");
@@ -62,6 +64,94 @@ module.exports = {
 那么如果在这些分离出去的代码中如果有使用require引入样式文件，那么使用ExtractTextPlugin这部分样式代码是不会被抽取出来的。  
 这部分不会抽取出来的代码，可以使用loader做一些处理，这就是ExtractTextPlugin.extract第一个参数的作用。  
 
+举个栗子
+
+```javascript
+// entry.js
+
+require('./main.css')
+let hello = null
+
+// 代码分离
+require.ensure([], function(require) {
+  hello = require('./hello').default
+})
+
+$("#hello").click(() => {
+  hello()
+})
+
+```
+
+在hello.js中我们引用一个css文件
+
+```javascript
+// hello.js
+
+require('./normal.css')
+export default () => {
+  console.log('hello~~')
+}
+```
+
+假设我们两个css文件内容如下：
+
+```css
+// main.css
+body {
+  color: red;
+}
+
+// normal.css
+h1 {
+  color: blue
+}
+```
+
+此时我们在webpack配置loader时这么写
+
+```javascript
+...
+module: {
+    loaders: [
+      { 
+        test: /\.js$/, 
+        loader: 'babel', 
+        query: {
+          presets: ['es2015']
+        }
+      }, { 
+        test: /\.css$/, 
+        loader: ExtractTextPlugin.extract("style-loader", ["css-loader"]) 
+      }
+    ]
+  }，
+  plugins: [
+    // allChunks 默认是false
+    new ExtractTextPlugin("[name].styles.[id].[contenthash].css", {allChunks: false}),
+  ]
+...
+```
+
+注意我们在 ExtractTextPlugin.extract第一个参数传入了style-loader，这个参数便是给像被代码分离后的chunk用的，表明这些无法被抽取的chunk的处理方式，既使用style-loader，将其嵌入到页面的style标签中。
+
+这时到页面上看，就会发现h1标签的文字是**蓝色**的（normal.css定义的），而不是红色的。
+
+这时我们尝试把ExtractTextPlugin.extract的第一个参数删除掉，会发现，这时h1标签的文字变为**红色**（main.css定义的）了，normal.css的样式也没有被嵌入到页面中。
+
+这便是第一个参数的作用
+
+如果我们也想要将normal.css的样式代码抽取到文件中，我们可以将allChunks设置为true，即
+
+```javascript
+plugins: [
+  // allChunks 默认是false
+  new ExtractTextPlugin("[name].styles.[id].[contenthash].css", {allChunks: true})
+]
+```
+---
+
+### ExtractTextPlugin配置项
 根据上面的案例，ExtractTextPlugin需要配合plugin使用。
 
 ```javascript
