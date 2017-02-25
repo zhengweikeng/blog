@@ -259,3 +259,123 @@ timeout
 1. [JavaScript 运行机制详解：再谈Event Loop](http://www.ruanyifeng.com/blog/2014/10/event-loop.html)
 1. [理解 Node.js 里的 process.nextTick()](https://www.oschina.net/translate/understanding-process-next-tick)
 
+# 进程
+## console.log是异步还是同步的
+console.log是同步的，它会阻塞调后续的操作。
+
+因此如果你想输出较大的数据，还是不要打印到控制台了，写文件吧。
+
+## 创建子进程
+child_process提供了几个方法用于创建子进程
+1. spawn(command[, args][, options])，启动一个子进程来执行命令
+1. exec(command[, options][, callback]) 同上，不过它提供了一个回调来获知子进程的状况
+1. execFile(file[, args][, options][, callback]) 启动一个子进程来执行可执行文件（不一定要是Node文件）
+1. fork(modulePath[, args][, options]) 加强版的 spawn(), 返回值是 ChildProcess 对象可以与子进程交互
+
+其中exec和execFile都可以设置超时
+
+领完spawn、exec、execFile都有自己的同步方法spawnAsync、execAsync和execFileAsync
+
+```javascript
+var cp = require('child_process')
+cp.spawn('node', ['worker.js'])
+cp.exec('node worker.js', function (err, stdout, stderr) {
+  // ...
+})
+cp.execFile('worker.js', function (err, stdout, stderr) {
+  // ...
+})
+cp.fork('./worker.js')
+```
+
+那么通过fork创建的进程和传统unix机器fork进程是一样的么？  
+unix机器fork一个进程的时候，它是基于父进程创建的，会继承一些父进程的属性。  
+而node去fork一个进程的时候，并不会去继承父进程的属性
+
+## 进程间通信（IPC）
+当父子进程建立IPC通道后，便可以进行通信
+
+```javascript
+// parent.js
+const cp = require('child_process')
+const n = cp.fork('./sub.js')
+
+n.on('message', (msg) => {
+  console.log('PARENT got message:', m)
+})
+
+n.send({hello: 'world'})
+```
+
+```javascript
+// sub.js
+process.on('message', (msg) => {
+  console.log('CHILD got message:', m)
+})
+
+process.send({foo: 'bar'})
+```
+
+node是怎么实现进程间的通信的？  
+```
+node通过管道的方式实现进程间通信。
+
+当父进程准备创建子进程时，父进程会先创建IPC通道并且监听它，然后才真正去创建子进程。
+同时会通过环境变量（NODE_CHANNEL_FD）的方式告诉子进程这个IPC通道的文件描述符，子进程通过这个文件描述符去连接IPC通道。
+
+
+【父进程】  --------生成------> 【子进程】
+    |                             |
+    |                             |
+  监听/接收                       连接
+    |                             |
+    |---------> 【IPC】 <----------|
+
+而这个通道在windows系统下面，使用的是命名管道，而在*nix系统采用的是Unix Domain Socket技术实现。
+这种socket与网络socket很详细，都是双向通信，只是不用经过网络层，非常高效。
+```
+
+> 注意的是，只有子进程是node进程，才可以通过上述方式进行进程间通信。除非其他类型的子进程也去连接这个通道。
+
+## child.kill 和 child.send的差别
+kill是通过发送信号的方式给子进程，如果没有指定信号，则会默认是SIGTERM  
+而send是通过IPC通道发送的的。
+
+```javascript
+const spawn = require('child_process').spawn
+const grep = spawn('grep', ['ssh'])
+
+grep.on('close', (code, signal) => {
+  console.log(
+    `child process terminated due to receipt of signal ${signal}`)
+})
+
+// Send SIGHUP to process
+grep.kill('SIGHUP')
+```
+
+注意，当使用kill方法时并不是去杀死子进程，只是去发送信号给子进程时。子进程收到信号时需要自己去做相应的处理，如果退出进程
+
+子进程死亡不会影响父进程, 不过 node 中父进程会收到子进程死亡的信号. 反之父进程死亡, 一般情况下子进程也会跟着死亡, 如果子进程需要死亡却没有随之终止而继续存在的状态, 被称作孤儿进程. 另外, 子进程死亡之后资源没有回收的情况被称作僵死进程.
+
+## 如何实现一个守护进程
+使用linux的都知道守护进程（daemon），简单点说就是在后台默默运行的进程。
+
+那node既然可以创建进程，那么是不是也可以创建守护进程呢，答案是可以的，而且也很简单。具体可以参看这篇文档：[Nodejs编写守护进程](https://cnodejs.org/topic/57adfadf476898b472247eac)
+
+重点就是使用spawn创建子进程的时候传入的一个备选参数detached:true。
+```javascript
+child_process.spawn('node', 'app.js', {
+  detached: true
+})
+```
+设置detached为true后，可以使得即使父进程退出了，子进程依旧可以运行。对于非windows系统而言，子进程会成为成为会话首进程和组长进程
+
+值得注意的是，虽然子进程已经脱离父进程了，但是父进程依旧会不断监听等待子进程退出。如果想完全将子进程“抛弃”，完全不接受detached的子进程，可以调用unref方法。
+
+```javascript
+const child = child_process.spawn('node', 'app.js', {
+  detached: true
+})
+child.unref()
+```
