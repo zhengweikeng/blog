@@ -262,9 +262,7 @@ timeout
 
 # 进程
 ## console.log是异步还是同步的
-console.log是同步的，它会阻塞调后续的操作。
-
-因此如果你想输出较大的数据，还是不要打印到控制台了，写文件吧。
+console.log 正常情况下是异步的, 除非你使用 new Console(stdout[, stderr]) 指定了一个文件为目的地.
 
 ## 创建子进程
 child_process提供了几个方法用于创建子进程
