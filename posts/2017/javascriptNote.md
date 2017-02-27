@@ -1,3 +1,173 @@
+# == 和 ===
+== 允许在相等比较中进行强制类型转换，而 === 不允许
+
+换句话说，使用==的时候，会进行一些强制类型转换，然后进行比较；而===是不会做这层转换的
+
+首先有几点要注意的：
+1. NaN不等于NaN
+1. +0等于-0
+
+## 比较的两者都是对象
+这里的对象还包括函数和数组，无论是使用==还是===，当两个对象指向同一个值时则视为相等
+
+注意不是对象里面的值相等，是对象的引用相等
+```javascript
+var obj1 = {
+  a: 1
+}
+var obj2 = obj1
+var obj3 = {
+  a: 1
+}
+
+console.log(obj1 == obj2) // true
+console.log(obj1 === obj2) // true
+
+console.log(obj1 == obj3) // false
+console.log(obj1 === obj3) // false
+```
+
+## 使用==比较字符串和数字
+当比较`x == y`根据ES5的定义：  
+1. 如果 Type(x) 是数字，Type(y) 是字符串，则返回 x == ToNumber(y) 的结果
+1. 如果 Type(x) 是字符串，Type(y) 是数字，则返回 ToNumber(x) == y 的结果
+
+```javascript
+var a = 42
+var b = '42'
+
+a === b // 没有强制转换，所以为false 
+
+a == b // ---> 42 == ToNumber(42) ---> 42 == 42 ---> true
+```
+
+## 使用==比较其他类型和布尔类型
+使用==来比较true或者false是最容易出错的地方
+
+ES5中是这样定义的:
+1. 如果 Type(x) 是布尔类型，则返回 ToNumber(x) == y 的结果
+1. 如果 Type(y) 是布尔类型，则返回 x == ToNumber(y) 的结果
+
+```javascript
+var a = '42'
+var b = true
+
+a == b // false
+```
+
+很多人以为`a=42`是真值，就会==true，其实是错误的。套用上面的转化规则：
+1. Type(b)是布尔类型，则 '42' == ToNumber(true)
+1. 转化后为 '42' == 1，测试便转化为比较字符串和数字，在转换一遍 ToNumber('42') == 1
+1. 42 == 1很明显示不相等，所以返回false
+
+```javascript
+var a = true
+var b = '42'
+
+a == b // false
+```
+该例子同理， `ToNumber(true) == '42'`，之后`1 == '42'`，再`1 == 42`，不相等
+
+再看一个
+```javascript
+var a = '42'
+var b = false
+
+a == b // false
+```
+依旧不相等， `'42' == ToNumber(false)`，之后`'42' == 0`，再`42 == 0`，明显不相等
+
+由此可看出，无论是和true比较还是false比较都不相等，这是个很容易忽视的问题
+
+应该怎么用呢？
+```javascript
+var a = '42'
+
+// 不要这样用，因为条件不成立
+if (a == true) {
+
+}
+
+// 也不要这样用，因为条件不成立
+if (a === true) {
+
+}
+
+// 这样是没问题的
+if (a) {
+
+}
+
+// 这样更好
+if (!!a) {
+
+}
+
+// 这样也很好
+if (Boolean(a))
+```
+
+## null和undefined的比较
+这两者使用==比较时，相应的转化规则为：
+1. 如果 x 为 null，y 为 undefined，则结果为 true
+1. 如果 x 为 undefined，y 为 null，则结果为 true
+
+```javascript
+var a = null
+var b
+a == b     // true
+a == null  // true
+b == null  // true
+
+a == false // false
+b == false // false
+a == "" // false
+b == "" // false
+a == 0 // false
+b == 0 // false
+```
+
+由此可见，如果你是想等于null或者undefined的，使用==是安全可靠的，其他值如""、false、0都不会使你的判断成立
+
+## 对象和非对象之间的比较
+当使用==比较对象（对象/函数/数组）和标量基本类型（字符串/数字/布尔值）时，会按照下面的规则进行转化：
+1. 如果 Type(x) 是字符串或数字，Type(y) 是对象，则返回 x == ToPromitive(y) 的结果
+1. 如果 Type(x) 是对象，Type(y) 是字符串或数字，则返回 ToPromitive(x) == y 的结果
+
+至于布尔值，会转化为数字，所以依旧套用上述规则
+
+```javascript
+var a = 42
+var b = [42]
+
+a == b // true
+```
+由于 ToPromitive(b)会转化为'42'，因此就转化为比较42 == '42'的比较，因此相等
+
+另外使用==也会对对象进行拆封，将其转化为基本数据类型
+```javascript
+var a = 'abc'
+var b = Object(a) // 和 new String(a) 一样
+
+a === b // false
+a == b // true 此处将b进行拆封，转化为'abc'，故与a相等
+
+var a = null
+var b = Object(a) // 和Object()一样
+a == b // false
+
+var c = undefined 
+var d = Object(c) // 和Object()一样
+c == d // false
+
+var e = NaN
+var f = Object(e) // 和new Number(e)一样
+e == f // false
+```
+因为没有对应的封装对象，所以 null 和 undefined 不能够被封装(boxed)，Object(null) 和 Object() 均返回一个常规对象  
+NaN能够被封装为数字封装对象，但拆封之后NaN == NaN返回false，因为NaN不等于NaN
+
+
 # 闭包
 代码解释
 ```javascript
