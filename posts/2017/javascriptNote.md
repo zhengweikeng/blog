@@ -136,6 +136,11 @@ b == 0 // false
 
 至于布尔值，会转化为数字，所以依旧套用上述规则
 
+*ToPrimitive是什么？*  
+抽象操作ToPrimitive会首先(通过内部操作 DefaultValue)检查该值是否有`valueOf()`方法。  
+如果有并且返回基本类型值，就使用该值进行强制类型转换。如果没有就使用`toString()`的返回值(如果存在)来进行强制类型转换  
+如果 valueOf() 和 toString() 均不返回基本类型值，会产生`TypeError`错误。例如`Object.create(null)`
+
 ```javascript
 var a = 42
 var b = [42]
