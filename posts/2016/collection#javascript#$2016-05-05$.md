@@ -59,7 +59,8 @@
 [Elasticsearch 权威指南](http://es.xiaoleilu.com/)
 
 ### nginx
-[网上最全面nginx教程（近100篇文章整理）](http://bbs.linuxtone.org/thread-25588-1-1.html)
+[网上最全面nginx教程（近100篇文章整理）](http://bbs.linuxtone.org/thread-25588-1-1.html)  
+[HTTP 请求头中的 X-Forwarded-For](https://imququ.com/post/x-forwarded-for-header-in-http.html)
 
 ### github
 [awesome-command-line-apps](https://github.com/herrbischoff/awesome-command-line-apps)  
