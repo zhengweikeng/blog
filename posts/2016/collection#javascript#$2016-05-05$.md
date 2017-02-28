@@ -13,7 +13,8 @@
 [5个提高Node.js应用性能的技巧](https://blog.maxleap.cn/archives/512)  
 [国内Nodejs 2015汇总](https://cnodejs.org/topic/5696e43e6272216e51bff67e)  
 [module.exports与exports](http://www.tuicool.com/articles/QnANB3)  
-[Node.js HTTP 使用详解](http://my.oschina.net/antianlu/blog/228511)
+[Node.js HTTP 使用详解](http://my.oschina.net/antianlu/blog/228511)  
+[https://zhuanlan.zhihu.com/p/25367269](https://zhuanlan.zhihu.com/p/25367269)
 
 ### React
 [react-patterns](https://github.com/planningcenter/react-patterns)  
