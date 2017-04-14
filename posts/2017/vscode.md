@@ -43,6 +43,13 @@ vscode的界面如下所示：
 
 跳转到指定行数：`ctrl + g`
 
+## 面板
+显示和隐藏面板：`cmd + j`
+
+显示和隐藏面板中的debug栏：`cmd + shift + y`
+
+显示和隐藏面板的terminal栏：`ctrl + ` `
+
 ## 基本功能
 删除一行：`cmd + shift + k`
 
@@ -56,14 +63,29 @@ vscode的界面如下所示：
 拷贝当前行到上一行：`alt + shift + ↑`  
 
 选中当前单词，并逐步选中后续相同的单词：`cmd + d`  
+查找下一个选中的单词：`cmd + g`  
+查找上一个选中的单词：`cmd + shift + g`  
 选择所有出现的当前选择：`cmd + shift + l`
 
 逐步撤销鼠标的操作：`cmd + u`
 
+选中当前行：`cmd + i`
 
+跳到括号的一端，无论是左括号还是右括号：`cmd + shift + \`
 
+跳到行首：`cmd + ←`  
+跳到行尾：`cmd + →`  
+跳到文件头：`cmd + ↑`  
+跳到文件尾：`cmd + ↓`  
 
+添加行注释：`cmd + /`  
+添加块注释：`ctrl + shift + a`
 
+触发代码提示：`ctrl + space`  
+由于与alfred的快捷键冲突了，我将其代码提示修改为了：`shift + space`
+ 
+保存全部：`cmd + alt + s`
+另存为：`cmd + shift + s`
 
 # 主题
 vscode默认提供了一些主题，使用`cmd + k` + `cmd + t`选择主题
