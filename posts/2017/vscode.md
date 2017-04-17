@@ -24,8 +24,8 @@ vscode的界面如下所示：
 侧边栏显示资源管理器：`cmd + shift + e`  
 侧边栏显示搜索区：`cmd + shift + f`  
 侧边栏显示版本管理区：`ctrl + shift + g`  
-侧边栏显示调试区：`ctrl + shift + d`  
-侧边栏显示扩展区：`ctrl + shift + x`
+侧边栏显示调试区：`cmd + shift + d`  
+侧边栏显示扩展区：`cmd + shift + x`
 
 默认情况下编辑区中多个栏目是水平方向的，我们也可以变成垂直方向：`alt + cmd + 1`
 
