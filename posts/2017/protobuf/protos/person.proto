@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+message Address {
+  string addr = 1;
+  int32 code = 2;
+}
+
+message Phone {
+  int32 phone_num = 1;
+}
+
+enum Pets {
+  DOG = 0;
+  CAT = 1;
+}
+
+message Person {
+  string name = 1;
+  int32 age = 2;
+  string email = 3;
+  bytes foo = 4;
+  Address address = 5;
+  repeated string favorite = 6;
+  map<string, Phone> phone = 7;
+  bool sex = 8;
+  oneof avatar {
+    string image_url = 9;
+    bytes image_data = 10;
+  }
+  Pets pet = 11;
+}
