@@ -1,4 +1,4 @@
->> 阅读该文需要你对node.js的Buffer有一定的基础
+> 阅读该文需要你对node.js的Buffer有一定的基础
 
 ## 什么是protobuf？
 protobuf是google开源项目，是一种数据交换的格式，主要用于不同端（客户端和服务器端），不同平台（如java和node.js）的数据通信，它相比xml和json，对数据进行了压缩，使得传输更加高效。
