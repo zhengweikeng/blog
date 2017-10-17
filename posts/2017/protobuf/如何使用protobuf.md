@@ -119,6 +119,10 @@ console.log(person.toObject())
 // console.log('Foo: ', Buffer.from(person.getFoo_asB64(), 'base64').toString())
 ```
 
+运行结果如下：
+![person_pb2](../images/pb.jpeg)
+
+
 person实例即为proto文件中定义的message实例，该实例有一些方法供我们使用，主要是一些获取字段的方法：
 1. getter和setter方法，用于获取字段和为字段赋值，如果字段类型为bytes，则还会有`getXxx_asB64`和`getXxx_asU8`两个方法用于获取base64和Uint8Array格式的数据
 1. toObject，会返回proto中的message所定义的object对象
@@ -138,3 +142,92 @@ person.setFoo(buf)
 // 此时会报错
 person.serializeBinary()
 ```
+
+## 使用decodeIO的protobuf.js
+在实际项目中，并不会像上面的案例这么简单，很多时候，我们是不知道客户端传递什么数据过来的，我们也不知道应该使用哪个proto文件生产的js文件。
+
+以日常的交易为例子，其中有两个业务，一个是查询历史交易订单，一个是下交易订单，它们分别是不同的proto文件  
+客户端采用tcp连接到服务器，传递了一批二进制数据过来，我们没法识别这数据到底是查询历史交易订单还是下交易订单，也因此无法采用之前的案例的做法了
+
+
+在githu上还有另外一个javascript的protobuf库，[protobuf.js](https://github.com/dcodeIO/ProtoBuf.js) 使用起来更简单方便，我在实际项目中使用的也是这个
+
+该库有个命令行工具，可以将proto文件编译成静态的js库，和上面用protoc编译一样。也可以将proto文件转化成对应json格式的文件，这个我们后面讲。
+
+我们先对我们的proto文件编译成静态js库，先安装protobuf.js，然后编译proto文件  
+
+```bash
+npm i protobufjs -g
+pbjs -t static-module -w commonjs -o person_pb2.js *.proto
+``` 
+
+接下来仿照之前的案例用该库来实现
+
+```javascript
+const {Person, Address, Phone} = require('./protos/person_pb2')
+
+const personObj = {
+  name: 'Jack',
+  age: 20,
+  email: '123@163.com',
+  sex: false
+}
+
+const addressObj = {
+  addr: 'shanghai',
+  code: 1
+}
+const address = Address.create(addressObj)
+personObj.address = address
+
+const favorite = ['movie', 'music']
+personObj.favorite = favorite
+
+const phoneObj = new Map()
+phoneObj.set('workPhone', 12345678901)
+personObj.phone = phoneObj
+
+personObj.avatar = 'imageUrl'
+personObj.imageUrl = 'this is image url'
+
+personObj.pet = 1
+
+const err = Person.verify(personObj)
+if (err) return console.error(err)
+
+const person = Person.create(personObj)
+
+const buffer = Person.encode(person).finish()
+console.log('Person Instance: ', person)
+console.log('Buffer: ', buffer)
+
+// >>>>>>>>>>>>> like client
+const decodePerson = Person.decode(buffer)
+console.log('decodePerson: ', decodePerson)
+```
+同理运行这个程序依旧需要在我们的项目安装protobuf.js，`npm i protobufjs`
+运行结果如下：  
+![person_pb2](../images/pb2.jpeg)
+
+protobuf.js库的执行
+依照decodeIO官网的图示  
+![person_pb2](../images/decodeIO.svg)
+
+我们需要按照几个步骤来生成对应buffer对象，并进行处理
+1. 定义一个原始的js对象，如上面的personObj，为该对象添加proto文件描述的对应的属性
+1. 调用Message.verify对该原始js对象值进行校验，如上面的`const err = Person.verify(personObj)`
+1. 依据proto文件描述的，实例化Message对象，即调用Message.create方法，如上面的`const person = Person.create(personObj)`
+1. 将Message实例转化为buffer对象，即调用Message.encode方法，如上面的`const buffer = Person.encode(person)`
+1. 将上一步的buffer对象传输给另一端，另一端则接收，采用Message.decode处理，如上面的`const decodePerson = Person.decode(buffer)`
+
+需要注意proto定义中的几个数据类型：
+1. bytes类型，使用Node.js的话，可以使用Buffer对象
+1. message类型，如address，只需要实例化一个Address的对象即可，过程是一样的
+1. enum类型，是一个整型的枚举值，在填充的数据中只需要声明对应的索引即可
+1. repeated类型，需要一个数组
+1. map类型，就用js中原生的map
+1. oneof类型，如果一个message中，某一项有多种不同类型的值就使用oneof取其一，需要先声明所需存储的Key名，如案例中的`personObj.avatar = 'imageUrl'`，在定义该Key对应的值，如`personObj.imageUrl = 'this is image url'`
+
+## 参考
+1. [google protobufers](https://developers.google.com/protocol-buffers/)
+1. [如何使用protobuf](https://ivweb.io/topic/59759fbc97baaa5723b4df69)
