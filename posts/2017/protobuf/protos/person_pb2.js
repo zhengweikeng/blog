@@ -224,7 +224,7 @@ $root.Phone = (function() {
      * Properties of a Phone.
      * @exports IPhone
      * @interface IPhone
-     * @property {number} [phoneNum] Phone phoneNum
+     * @property {number|Long} [phoneNum] Phone phoneNum
      */
 
     /**
@@ -243,11 +243,11 @@ $root.Phone = (function() {
 
     /**
      * Phone phoneNum.
-     * @member {number}phoneNum
+     * @member {number|Long}phoneNum
      * @memberof Phone
      * @instance
      */
-    Phone.prototype.phoneNum = 0;
+    Phone.prototype.phoneNum = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
      * Creates a new Phone instance using the specified properties.
@@ -274,7 +274,7 @@ $root.Phone = (function() {
         if (!writer)
             writer = $Writer.create();
         if (message.phoneNum != null && message.hasOwnProperty("phoneNum"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int32(message.phoneNum);
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.phoneNum);
         return writer;
     };
 
@@ -310,7 +310,7 @@ $root.Phone = (function() {
             var tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.phoneNum = reader.int32();
+                message.phoneNum = reader.int64();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -348,8 +348,8 @@ $root.Phone = (function() {
         if (typeof message !== "object" || message === null)
             return "object expected";
         if (message.phoneNum != null && message.hasOwnProperty("phoneNum"))
-            if (!$util.isInteger(message.phoneNum))
-                return "phoneNum: integer expected";
+            if (!$util.isInteger(message.phoneNum) && !(message.phoneNum && $util.isInteger(message.phoneNum.low) && $util.isInteger(message.phoneNum.high)))
+                return "phoneNum: integer|Long expected";
         return null;
     };
 
@@ -366,7 +366,14 @@ $root.Phone = (function() {
             return object;
         var message = new $root.Phone();
         if (object.phoneNum != null)
-            message.phoneNum = object.phoneNum | 0;
+            if ($util.Long)
+                (message.phoneNum = $util.Long.fromValue(object.phoneNum)).unsigned = false;
+            else if (typeof object.phoneNum === "string")
+                message.phoneNum = parseInt(object.phoneNum, 10);
+            else if (typeof object.phoneNum === "number")
+                message.phoneNum = object.phoneNum;
+            else if (typeof object.phoneNum === "object")
+                message.phoneNum = new $util.LongBits(object.phoneNum.low >>> 0, object.phoneNum.high >>> 0).toNumber();
         return message;
     };
 
@@ -384,9 +391,16 @@ $root.Phone = (function() {
             options = {};
         var object = {};
         if (options.defaults)
-            object.phoneNum = 0;
+            if ($util.Long) {
+                var long = new $util.Long(0, 0, false);
+                object.phoneNum = options.longs === String ? long.toString() : options.longs === Number ? long.toNumber() : long;
+            } else
+                object.phoneNum = options.longs === String ? "0" : 0;
         if (message.phoneNum != null && message.hasOwnProperty("phoneNum"))
-            object.phoneNum = message.phoneNum;
+            if (typeof message.phoneNum === "number")
+                object.phoneNum = options.longs === String ? String(message.phoneNum) : message.phoneNum;
+            else
+                object.phoneNum = options.longs === String ? $util.Long.prototype.toString.call(message.phoneNum) : options.longs === Number ? new $util.LongBits(message.phoneNum.low >>> 0, message.phoneNum.high >>> 0).toNumber() : message.phoneNum;
         return object;
     };
 

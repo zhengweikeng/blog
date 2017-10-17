@@ -144,12 +144,6 @@ person.serializeBinary()
 ```
 
 ## 使用decodeIO的protobuf.js
-在实际项目中，并不会像上面的案例这么简单，很多时候，我们是不知道客户端传递什么数据过来的，我们也不知道应该使用哪个proto文件生产的js文件。
-
-以日常的交易为例子，其中有两个业务，一个是查询历史交易订单，一个是下交易订单，它们分别是不同的proto文件  
-客户端采用tcp连接到服务器，传递了一批二进制数据过来，我们没法识别这数据到底是查询历史交易订单还是下交易订单，也因此无法采用之前的案例的做法了
-
-
 在githu上还有另外一个javascript的protobuf库，[protobuf.js](https://github.com/dcodeIO/ProtoBuf.js) 使用起来更简单方便，我在实际项目中使用的也是这个
 
 该库有个命令行工具，可以将proto文件编译成静态的js库，和上面用protoc编译一样。也可以将proto文件转化成对应json格式的文件，这个我们后面讲。
@@ -183,9 +177,11 @@ personObj.address = address
 const favorite = ['movie', 'music']
 personObj.favorite = favorite
 
-const phoneObj = new Map()
-phoneObj.set('workPhone', 12345678901)
-personObj.phone = phoneObj
+personObj.phone = {
+  'workPhone': {
+    phoneNum: 12345678901
+  }
+}
 
 personObj.avatar = 'imageUrl'
 personObj.imageUrl = 'this is image url'
@@ -203,7 +199,7 @@ console.log('Buffer: ', buffer)
 
 // >>>>>>>>>>>>> like client
 const decodePerson = Person.decode(buffer)
-console.log('decodePerson: ', decodePerson)
+console.log('decodePerson: ', Person.toObject(decodePerson, {longs: Number}))
 ```
 同理运行这个程序依旧需要在我们的项目安装protobuf.js，`npm i protobufjs`
 运行结果如下：  
@@ -227,6 +223,143 @@ protobuf.js库的执行
 1. repeated类型，需要一个数组
 1. map类型，就用js中原生的map
 1. oneof类型，如果一个message中，某一项有多种不同类型的值就使用oneof取其一，需要先声明所需存储的Key名，如案例中的`personObj.avatar = 'imageUrl'`，在定义该Key对应的值，如`personObj.imageUrl = 'this is image url'`
+
+### protobufjs另外一种使用方式
+在某些情况下，人们无法预先知道 .proto 文件，他们需要动态处理一些未知的 .proto 文件。
+
+```javascript
+const protobuf = require("protobufjs")
+
+// proto文件的路径
+protobuf.load('./protos/person.proto', (err, root) => {
+  const Person = root.lookupType('Person')
+  const Address = root.lookupType('Address')
+  const Phone = root.lookupType('Phone')
+
+  const personObj = {
+    name: 'Jack',
+    age: 20,
+    email: '123@163.com',
+    sex: false
+  }
+  
+  personObj.foo = Buffer.from('好')
+  
+  const addressObj = {
+    addr: 'shanghai',
+    code: 1
+  }
+  const address = Address.create(addressObj)
+  personObj.address = address
+  
+  const favorite = ['movie', 'music']
+  personObj.favorite = favorite
+  
+  personObj.phone = {
+    'workPhone': {
+      phoneNum: 12345678901
+    }
+  }
+  
+  personObj.avatar = 'imageUrl'
+  personObj.imageUrl = 'this is image url'
+  
+  personObj.pet = 1
+  
+  const error = Person.verify(personObj)
+  if (error) return console.log(err)
+
+  const person = Person.create(personObj)
+  
+  const buffer = Person.encode(person).finish()
+  console.log('Person Instance: ', person)
+  console.log('Buffer: ', buffer)
+  
+  // >>>>>>>>>>>>> like client
+  const decodePerson = Person.decode(buffer)
+  console.log('decodePerson: ', Person.toObject(decodePerson, {longs: Number}))
+})
+```
+运行结果和之前是一样的
+
+还有一种做法，我们事先将proto文件编译成json
+```bash
+$ pbjs -t json person.proto -o bundle.json
+```
+
+接着直接在代码中使用该json文件
+
+```javascript
+// 当采用json的方式时，这个包不包含解析器，包更小
+const protobuf = require("protobufjs/light")
+const bundle = require('./protos/bundle.json')
+
+const root = protobuf.Root.fromJSON(bundle)
+const Person = root.lookupType('Person')
+const Address = root.lookupType('Address')
+const Phone = root.lookupType('Phone')
+
+const personObj = {
+  name: 'Jack',
+  age: 20,
+  email: '123@163.com',
+  sex: false
+}
+
+personObj.foo = Buffer.from('好')
+
+const addressObj = {
+  addr: 'shanghai',
+  code: 1
+}
+const address = Address.create(addressObj)
+personObj.address = address
+
+const favorite = ['movie', 'music']
+personObj.favorite = favorite
+
+personObj.phone = {
+  'workPhone': {
+    phoneNum: 12345678901
+  }
+}
+
+personObj.avatar = 'imageUrl'
+personObj.imageUrl = 'this is image url'
+
+personObj.pet = 1
+
+const error = Person.verify(personObj)
+if (error) return console.log(error)
+
+const person = Person.create(personObj)
+
+const buffer = Person.encode(person).finish()
+console.log('Person Instance: ', person)
+console.log('Buffer: ', buffer)
+
+// >>>>>>>>>>>>> like client
+const decodePerson = Person.decode(buffer)
+console.log('decodePerson: ', Person.toObject(decodePerson, {longs: Number, enums: String, bytes: String}))
+```
+运行结果和之前基本是一样的，但是注意我们最后一行代码toObject的时候，传了一些其他的参数，用于转化一些值。 
+![person_pb3](../images/pb3.jpeg)
+
+相关参数说明如下：
+```
+var object = AwesomeMessage.toObject(message, {
+  enums: String,  // 将枚举值转化为对应的Key
+  longs: String,  // 将long类型转化为string
+  bytes: String,  // 将bytes转化为base64
+  defaults: true, // 包含默认值
+  arrays: true,   // 即使数组没有值，让该数组出现在message实例中，填充空数组
+  objects: true,  // 同上，所谓空对象
+  oneofs: true    // 包含被设置值的字段名称
+})
+```
+
+官方是这么说的：
+推荐在生产环境中采取这种将所有proto编译成单独的json文件的方式，减少网络请求，也可以避免过度解析
 
 ## 参考
 1. [google protobufers](https://developers.google.com/protocol-buffers/)

@@ -6,7 +6,7 @@ message Address {
 }
 
 message Phone {
-  int32 phone_num = 1;
+  int64 phone_num = 1;
 }
 
 enum Pets {

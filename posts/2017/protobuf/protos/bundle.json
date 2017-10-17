@@ -1,0 +1,88 @@
+{
+  "nested": {
+    "Address": {
+      "fields": {
+        "addr": {
+          "type": "string",
+          "id": 1
+        },
+        "code": {
+          "type": "int32",
+          "id": 2
+        }
+      }
+    },
+    "Phone": {
+      "fields": {
+        "phoneNum": {
+          "type": "int64",
+          "id": 1
+        }
+      }
+    },
+    "Pets": {
+      "values": {
+        "DOG": 0,
+        "CAT": 1
+      }
+    },
+    "Person": {
+      "oneofs": {
+        "avatar": {
+          "oneof": [
+            "imageUrl",
+            "imageData"
+          ]
+        }
+      },
+      "fields": {
+        "name": {
+          "type": "string",
+          "id": 1
+        },
+        "age": {
+          "type": "int32",
+          "id": 2
+        },
+        "email": {
+          "type": "string",
+          "id": 3
+        },
+        "foo": {
+          "type": "bytes",
+          "id": 4
+        },
+        "address": {
+          "type": "Address",
+          "id": 5
+        },
+        "favorite": {
+          "rule": "repeated",
+          "type": "string",
+          "id": 6
+        },
+        "phone": {
+          "keyType": "string",
+          "type": "Phone",
+          "id": 7
+        },
+        "sex": {
+          "type": "bool",
+          "id": 8
+        },
+        "imageUrl": {
+          "type": "string",
+          "id": 9
+        },
+        "imageData": {
+          "type": "bytes",
+          "id": 10
+        },
+        "pet": {
+          "type": "Pets",
+          "id": 11
+        }
+      }
+    }
+  }
+}
