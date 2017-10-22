@@ -43,9 +43,14 @@ if (error) return console.log(error)
 const person = Person.create(personObj)
 
 const buffer = Person.encode(person).finish()
-console.log('Person Instance: ', person)
-console.log('Buffer: ', buffer)
+// console.log('Person Instance: ', person)
+// console.log('Buffer: ', buffer)
 
 // >>>>>>>>>>>>> like client
-const decodePerson = Person.decode(buffer)
-console.log('decodePerson: ', Person.toObject(decodePerson, {longs: Number, enums: String, bytes: String, oneofs: true}))
+// const decodePerson = Person.decode(buffer)
+// console.log('decodePerson: ', Person.toObject(decodePerson, {longs: Number, enums: String, bytes: String, oneofs: true}))
+
+module.exports = {
+  personBuf: buffer,
+  personObj: personObj
+}
