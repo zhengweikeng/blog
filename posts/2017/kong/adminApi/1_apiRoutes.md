@@ -117,3 +117,27 @@ GET / HTTP/1.1
 Host: service.com
 ```
 即变成了调用kong时所使用的host
+
+# 查询 api
+查询单个api：'GET /apis/{name or id}'  
+
+查询列表：'GET /apis'，可以传递如下参数：
+ATTRIBUTE | DESCRIPTION
+----------|------------
+id  |  api 的id
+name | api的name
+upstream_url | api的upstream_url
+retries | 重试次数
+size | 返回数量，默认值是100
+offset | 分页偏移量
+
+# 更新 api
+Endpoint: 'PATCH /apis/{name or id}'  
+请求参数和添加的一样
+
+# 更新或者创建api
+Endpoint: 'UPDATE /apis'  
+请求参数和添加的一样
+
+# 删除 api
+Endpoint: 'DELETE /apis/{name or id}'
