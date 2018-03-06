@@ -262,7 +262,24 @@ timeout
 
 # 进程
 ## console.log是异步还是同步的
-console.log 正常情况下是异步的, 除非你使用 new Console(stdout[, stderr]) 指定了一个文件为目的地.
+首先console.log并不是标准的javascript正式的一部分，而是由各个宿主环境添加到javascript中的。  
+
+从浏览器的方面来说，每个浏览器都有自己的实现方式。有些浏览器可能并不会把它同步输出，因为对于浏览器来说I/O是个耗时的操作，所以被浏览器放在了后台执行。
+```javascript
+var a = {
+  index: 1
+}
+
+console.log(a)
+
+a.index++
+```
+这段代码在浏览器大部分都能按照我们的意愿被显示执行，打印{a:1}。但有时可能会是{a:2}。
+
+在Node中，由于console.log是采用了process.stdout标准输出，而process.stdout是否异步取决于操作系统，参照node文档中关于process.stdout的解释
+1. 在文件中，在windows和posix系统是同步的
+2. 在terminal，如果是windows是异步的，如果是posix系统是同步的
+3. 在管道，如socket中，如果是window系统下是同步的，在posix系统下是异步的
 
 ## 创建子进程
 child_process提供了几个方法用于创建子进程
