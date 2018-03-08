@@ -1,7 +1,7 @@
 ### tcp建立连接
 tcp连接的建立需要经历”三次握手“的过程。过程如下
 
-1. client发送SYN包（值为j）以及SEQ包到server端，此时client进入SYN_SEND状态。此为第一次握手。
+1. client发送SYN包（值为j）以及SEQ包到server端，此时client进入SYN_SENT状态。此为第一次握手。
 2. server端收到SYN包后，发送一个ACK（值为seq+1）确认包和SYN（值为k）给client，此时server进入SYN_RECV状态。此为第二次握手。
 3. client收到SYN+ACK包后，向server发送一个ACK（值为k+1），该包发送完成后，client和server均进入ESTABLISH状态。此为第三次握手。
 
