@@ -153,7 +153,7 @@ console.log(`var foo = "${foo}";`)
 // var foo = ""hello""
 ```
 
-这是我们需要将变量中的字符进行javascript encode，将所有非白名单字符转义为`\`形式，并且放在引号内部。
+使用“\”对特殊字符进行转义，除数字字母之外，小于127的字符编码使用16进制“\xHH”的方式进行编码，大于用unicode（非常严格模式）。
 
 阿里的 [egg](https://github.com/eggjs/egg/) 框架提供了一个`helper.sjs`的工具帮我们做到这一点，具体原码可到这里看 [sjs](https://github.com/eggjs/egg-security/blob/master/lib/helper/sjs.js)
 ```javascript
@@ -169,6 +169,32 @@ sjs(`var foo = "${foo}";`)
 该库会将非数字、非字母进行转义成十六进制格式，并在前面加上`\\xx`。
 
 有时我们还需要处理json数据，json也容易被xss利用，也需要转义，egg也提供了`helper.sjon`做json encode，具体可以看 [egg sjson源码](https://github.com/eggjs/egg-security/blob/master/lib/helper/sjson.js)。  该库会遍历json中的每个键值对，做编码处理，因此会有一定的性能开销，要慎重使用。
+
+### 在地址中输出
+```javascript
+<a href="http://www.evil.com/?test=$var"></a>
+```
+此时可能的攻击方法为
+```javascript
+<a href="http://www.evil.com/?test=" onclik=alert(1)"" ></a>
+```
+为了防止xss攻击，我们需要进行URLEncode，变成
+```javascript
+<a href="http://www.evil.com/?test=%22%20onclick%3balert%281%29%22"></a>
+```
+
+但如果变量是要作为整个url的，就不能这么做了
+```javascript
+<a href="$var"></a>
+```
+如果用URLEncode的话，会把`://`和`.`这种都编码掉。
+
+另外攻击者可能构造如下攻击
+```javascript
+<a href="javascript:alert(1)"></a>
+```
+除了javascript作为伪协议外，还有vbscript、dataURI等伪协议，都能导致脚本执行  
+这时我们应该先判断变量是否以`http`开头，如果不是则自动添加，然后再对变量进行URLEncode，以保证不会出现伪协议类的xss攻击。
 
 ### 富文本输出格式化
 当页面允许用户录入页面排版、格式控制相关的HTML时，我们需要对用户的输入进行过滤和格式化，通过白名单的方式来控制允许的标签和属性。
