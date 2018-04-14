@@ -1,4 +1,4 @@
-# xss
+# xss(Cross Site Scripting) 跨站脚本攻击
 举个栗子：  
 get_param_from_url是一个从地址栏获取参数的函数
 ```html
