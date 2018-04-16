@@ -17,7 +17,7 @@ function doSomeThing() {
 </script>
 <script src="http://example.com/data.php?callback=doSomeThing">
 ```
-假设上述页面a.html想要通过ajax获取一个不同域上的json数据，地址为http://example.com/data.php。我们约定了一个名为callback的请求参数，当然你也可以用其他参数名。
+假设上述页面a.html想要通过ajax获取一个不同域上的json数据，地址为example.com/data.php。我们约定了一个名为callback的请求参数，当然你也可以用其他参数名。
 
 由于是作为script标签引入的，所以data.php必须返回一个能够执行的js脚本。
 ```php
