@@ -5,10 +5,10 @@
 2. DOM 和 Js对象无法获得
 3. AJAX 请求不能发送
 
-解决跨域的方式有很多种，从传统的jsonp、iframe、html5 postMessage，到目前广泛使用的cors。重点看下cors
+解决跨域的方式有很多种，从传统的jsonp、iframe、html5 postMessage，到目前广泛使用的cors。重点看下cors
 
 ## jsonp跨域
-利用了script标签允许跨域的特性，获取json数据
+利用了script标签允许跨域的特性，获取json数据
 ```html
 <script>
 function doSomeThing() {
@@ -19,7 +19,7 @@ function doSomeThing() {
 ```
 假设上述页面a.html想要通过ajax获取一个不同域上的json数据，地址为http://example.com/data.php。我们约定了一个名为callback的请求参数，当然你也可以用其他参数名。
 
-由于是作为script标签引入的，所以data.php必须返回一个能够执行的js脚本。
+由于是作为script标签引入的，所以data.php必须返回一个能够执行的js脚本。
 ```php
 $callback = $_GET['callback']
 $data = array('a', 'b', 'c')
@@ -32,11 +32,11 @@ echo $callback.'('.json_encode($data).')'
 1. 会有引发xss漏洞的可能
 
 ## 通过修改document.domain来跨子域
-当页面有父子页面的时候，如果父子页面是不同域时，虽然能够获取到子页面的window对象，却无法获取到其几乎任何属性和方法
+当页面有父子页面的时候，如果父子页面是不同域时，虽然能够获取到子页面的window对象，却无法获取到其几乎任何属性和方法
 
 为什么说几乎呢，因为有些方法是能拿到的，如后面要介绍的postMessage。 
 
-假设有有个页面`www.example.com/a.html`，其引入了一个`http://example.com/b.html`的子页面。
+假设有有个页面`www.example.com/a.html`，其引入了一个`example.com/b.html`的子页面。
 ```html
 <script>
 function loadPage() {
@@ -65,7 +65,7 @@ document.domain = 'example.com'
 ```
 通过这种方式，a.html中就能通过iframe访问b.html中的属性和方法了。
 
-不过如果你想在http://www.example.com/a.html页面中通过ajax直接请求http://example.com/b.html页面，即使你设置了相同的document.domain也还是不行的，所以修改document.domain的方法只适用于不同子域的框架间的交互。
+不过如果你想在www.example.com/a.html页面中通过ajax直接请求example.com/b.html页面，即使你设置了相同的document.domain也还是不行的，所以修改document.domain的方法只适用于不同子域的框架间的交互。
 
 可以通过jsonp的方式来实现ajax的跨域
 
@@ -204,7 +204,7 @@ Access-Control-Allow-Credentials: true
 ```
 默认情况下跨域发送请求时，服务器端是不接受cookie的，如果希望cookie包含在请求中，需要设置`Access-Control-Allow-Credentials: true`
 
-另外浏览器端，需要设置ajax请求的withCredentials为true，不然即使服务器同意发送cookie，浏览器也可能不会发送。
+另外浏览器端，需要设置ajax请求的withCredentials为true，不然即使服务器同意发送cookie，浏览器也可能不会发送。
 ```javascript
 const request = new AJAXRequest();
 request.withCredentials = true;
@@ -214,7 +214,7 @@ request.withCredentials = true;
 ```
 Access-Control-Expose-Headers: Foo
 ```
-默认情况下，在跨域时，浏览器端在获取响应头只能是如下6个：
+默认情况下，在跨域时，浏览器端在获取响应头只能是如下6个：
 1. Cache-Control
 1. Content-Language
 1. Content-Type
@@ -234,9 +234,9 @@ Content-Type: text/html; charset=utf-8
 
 ### 非简单请求:
 除了简单请求之外的请求就是非简单请求了。  
-非简单请求会在正式通信前多发送一个请求，该请求为“预检”请求（preflight）
+非简单请求会在正式通信前多发送一个请求，该请求为“预检”请求（preflight）
 
-浏览器会先询问，当前发起的请求是否符合服务器的要求。服务器会通过Origin、http method、headers等字段来检验请求，如果确认合法，浏览器正式发起请求。如果不合法，服务器不会返回任何cors相关的头信息，这时浏览器会报错，控制台会打印无法跨域请求的信息。
+浏览器会先询问，当前发起的请求是否符合服务器的要求。服务器会通过Origin、http method、headers等字段来检验请求，如果确认合法，浏览器正式发起请求。如果不合法，服务器不会返回任何cors相关的头信息，这时浏览器会报错，控制台会打印无法跨域请求的信息。
 
 假设我们发起如下请求
 ```javascript
@@ -290,7 +290,7 @@ User-Agent: Mozilla/5.0...
 Access-Control-Allow-Origin: http://my.web.com
 Content-Type: text/html; charset=utf-8
 ```
-可以看到`Access-Control-Allow-Origin`这个是每个响应都一定要返回的
+可以看到`Access-Control-Allow-Origin`这个是每个响应都一定要返回的
 
 #### Request-Method
 ```
