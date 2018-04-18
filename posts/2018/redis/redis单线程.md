@@ -45,7 +45,7 @@ poll和select几乎是一样的，它解决了文件描述数量的限制，但�
 这时候epoll出现了。
 
 ### epoll
-为了解决select和poll中无效的遍历，只需要记录就绪的是哪些socket即可。
+为了解决select和poll中无效的遍历，只需要记录就绪的是哪些socket即可。
 
 epoll使用了一个描述符来管理多个描述
 
