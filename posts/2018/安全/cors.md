@@ -174,7 +174,7 @@ window.onmessage = function(e) {
     * Content-Language
     * Last-Event-ID
     * Content-Type只能为：
-        * application/x-www-form-urlencoded
+        * application/x-www-form-urlencoded
         * multipart/form-data
         * text/plain
 
@@ -224,7 +224,7 @@ Access-Control-Expose-Headers: Foo
 
 如果想要获取其他字段，就需要在`Access-Control-Expose-Headers`里面指定
 
-总的来说，简单请求时，服务端会返回如下响应头
+总的来说，简单请求时，服务端会返回如下响应头
 ```
 Access-Control-Allow-Origin: http://my.web.com
 Access-Control-Allow-Credentials: true
