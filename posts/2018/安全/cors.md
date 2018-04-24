@@ -196,7 +196,7 @@ Access-Control-Allow-Origin: http://my.web.com
 ```
 Access-Control-Allow-Origin: *|url[, moreUrls]
 ```
-表示接受请求的origin的备选值，如果是*说明接受任何origin的请求。
+表示接受请求的origin的备选值，如果是*说明接受任何origin的请求。
 
 #### cookie操作
 ```
