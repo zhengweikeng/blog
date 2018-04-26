@@ -33,16 +33,23 @@ select会监听文件描述符（socket连接），如果描述符发生了变�
 
 select函数返回后，只是告诉系统已经有socket就绪了，但是却没说是哪个socket就绪了，因此还是需要去遍历一遍所有描述符找到就绪的那个socket。但是它解决了cpu空转的问题。
 
+采用select作为网络模型后，如果网络出错了，select是否能够知道？  
+其实select是不能直接检测到网络关闭的，虽然它有一个出错的socket集合。它是先检测到socket是可读的，并且从调用read函数，发现返回值是0，说明socket关闭了。
+
 select有3个缺点：
 1. 每次调用select，都需要把fd集合从用户态拷贝到内核态，这个开销在fd很多时会很大。
 1. 每次调用select后，都需要在内核遍历传递进来的所有fd，这个开销在fd很多时也很大。
-1. fd数量有限，默认1024。
+1. fd数量有限，linux下面为`FD_SETSIZE`，值为1024。
 
 为了解决文件描述符数量的限制，于是产生了poll。  
 poll和select几乎是一样的，它解决了文件描述数量的限制，但是失去了select跨平台的特性。
 
 从上述说明知道，select和poll都需要在返回后，通过遍历文件描述符来获取已经就绪的socket。但其实大部分情况下，同一时刻只有很少socket处于就绪状态，为了获取这个就绪的socket，我们要去遍历一遍列表就有点得不偿失了。  
 这时候epoll出现了。
+
+这里再插入一句：select真的就没有任何作用么？  
+作为服务器端，如果使用select的话，由于轮询的效率低下，而且最大连接数受到限制，所以一般都不会采用select；  
+但是作为客户端的话，客户端本身只是维护自己的一些连接，没有并发的问题，因此其实是可以采用select的，而且select模型简单，写起来也好写。
 
 ### epoll
 为了解决select和poll中无效的遍历，只需要记录就绪的是哪些socket即可。
@@ -68,9 +75,7 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)
 int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout)
 ```
 
-
 epoll先通过事件注册一个文件描述符，一旦该描述符就绪时，内核会采用类似callback的回调机制，迅速激活这个文件描述符，当进程调用epoll_wait()时便得到通知。
-
 
 参考资料：  
 [I/O多路复用技术（multiplexing）是什么？](https://www.zhihu.com/question/28594409)  
