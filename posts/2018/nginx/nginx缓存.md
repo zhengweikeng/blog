@@ -58,3 +58,66 @@ server {
 这个流程如下：
 1. nginx将uri进行hash，去查看是否有缓存文件可以使用
 2. 如果有缓存文件，直接返回；否则去请求目标服务器后进行缓存，之后返回给客户端
+
+## 手动清除文件
+通过配置`proxy_cache_purge`可以通过访问一个链接达到清除缓存文件的效果
+```nginx
+server {
+  listen 8887;
+  server_name 127.0.0.1;
+
+  location ~ /purge(/.*) {
+    allow 127.0.0.1;
+    deny all;
+    proxy_cache_purge tmp-test $uri;
+  }
+
+  location /tmp-file/ {
+    proxy_cache tmp-test;
+    proxy_cache_valid 200 206 304 301 302 10d;
+    proxy_cache_key $uri;
+    proxy_set_header Host $host:$server_port;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+    proxy_pass http://127.0.0.1:8888/;
+  }
+}
+```
+访问`127.0.0.1:8887/purge/app.js`便可以清除缓存文件
+
+## 让某些文件不缓存
+```
+server {
+  listen 8887;
+  server_name 127.0.0.1;
+
+  if ($request_uri ~ .*\.(html)$) {
+    set $cookie_no_cache 1;
+  }
+
+  location ~ /purge(/.*) {
+    allow 127.0.0.1;
+    deny all;
+    proxy_cache_purge tmp-test $uri;
+  }
+
+  location /tmp-file/ {
+    proxy_cache tmp-test;
+    proxy_cache_valid 200 206 304 301 302 10d;
+    proxy_cache_key $uri;
+    proxy_set_header Host $host:$server_port;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+    proxy_no_cache $cookie_no_cache
+
+    proxy_pass http://127.0.0.1:8888/;
+  }
+}
+```
+这样当访问`127.0.0.1:8887/tmp-file/index.html`时便不会缓存
+
+
+参考文档：
+[nginx proxy_cache 缓存配置](https://blog.csdn.net/dengjiexian123/article/details/53386586)
