@@ -8,7 +8,7 @@ ATTRIBUTE | DESCRIPTION
 name | api的名字
 hosts | 指向api的host，多个host通过逗号分隔。注意的是，hosts、uris和methods至少有一个必须指定
 uris | 指向api的uri前缀，通过该路径访问api，如`/my-path`
-methods | 指向api的http method，例如GET、POST，多个method通过逗号分隔
+methods | 指向api的http method，例如GET、POST，多个method通过逗号分隔
 upstream_url | api服务的地址，如http://api.com
 strip_uri | 当通过一个uris前缀匹配一个API时，从上游的URI中去掉匹配的前缀。 默认值：true。
 preserve_host | 默认值为false，此时会将api的hostname作为头部Host的值传入上游upstream_url的服务。默认情况下是将调用kong时所指定的Host传入上游upstream_url（查看案例三）
@@ -16,7 +16,7 @@ retry | 重试次数，默认5次
 upstream_connect_timeout | 连接上游服务的超时时间，默认60000ms
 upstream_send_timeout | 定义两个连续向上游服务发送的写入操作的超时时间，单位是毫秒，默认值为60000
 upstream_read_timeout | 定义两个连续向上游服务发送读取操作的超时时间，单位是毫秒，默认值为60000
-https_only | 是否只允许使用https，默认为false
+https_only | 是否只允许使用https，默认为false
 http_if_terminated | 当强制使用https时，是否使用X-Forwarded-Proto头
 
 ## 案例一
@@ -136,7 +136,7 @@ Endpoint: 'PATCH /apis/{name or id}'
 请求参数和添加的一样
 
 # 更新或者创建api
-Endpoint: 'UPDATE /apis'  
+Endpoint: 'UPDATE /apis'  
 请求参数和添加的一样
 
 # 删除 api
