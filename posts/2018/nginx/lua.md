@@ -12,7 +12,7 @@
 4. ngx.redirect 重定向
 5. ngx.print 输出响应内容体
 6. ngx.say 同ngx.print，但是最后会输出一个换行符
-7. ngx.header 输出响应头
+7. ngx.header 输出响应头
 
 ```nginx
 server {
