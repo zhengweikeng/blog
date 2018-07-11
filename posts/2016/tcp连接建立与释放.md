@@ -178,3 +178,4 @@ wss://example.com/
 #### 参考资料
 1. [TCP的三次握手(建立连接）和四次挥手(关闭连接）](http://www.cnblogs.com/Jessy/p/3535612.html)
 2. [服务器TIME_WAIT和CLOSE_WAIT详解和解决办法](http://www.cnblogs.com/sunxucool/p/3449068.html)
+3. [TCP 协议（半打开）](https://blog.csdn.net/q1007729991/article/details/69948617)
