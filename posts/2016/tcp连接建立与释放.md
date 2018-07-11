@@ -1,6 +1,6 @@
 ![tcp建立连接和释放连接](https://github.com/zhengweikeng/blog/blob/master/posts/2016/images/tcp%E5%BB%BA%E7%AB%8B%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%87%8A%E6%94%BE%E8%BF%9E%E6%8E%A5.png?raw=true)
 
-### tcp建立连接
+## tcp建立连接
 tcp连接的建立需要经历”三次握手“的过程。过程和两端的状态如下
 
 1. client端为closed状态，服务端为listen状态
@@ -32,7 +32,7 @@ CLOSED->LISTEN->SYN_RECV->ESTABLISH
 是可以的，而且实际上也是这么做的，因为客户端在收到服务端的syn和ack包后，就已经进入`ESTLIBASHED`状态，可以开始发数据。  
 但是如果此时服务端一直没有收到ack包，那么通过滑动窗口机制，窗口大小会不断缩小，最终客户端会堵塞住，无法发包。   
 
-### tcp连接释放
+## tcp连接释放
 Tcp释放连接的过程需要经历“四次挥手”的过程。
 1. 由于服务端和客户端都可以主动断开连接，因此两端应该描述为发送方和接收方，此时两端状态均为`ESTLIBASHED`
 2. 发送方发送一个FIN包给接收方，告诉对方要断开连接了，此时发送方进入`FIN_WAIT_1`状态
@@ -91,7 +91,44 @@ CLOSED->SYN_SEND->ESTABLISH->FIN_WAIT_1->FIN_WAIT_2->TIME_WAIT->CLOSED
 server:  
 CLOSED->LISTEN->SYN_RECV->ESTABLISH->CLOSE_WAIT->LAST_ACK->CLOSED
 
-### websocket
+## 连接异常断开分析
+上面描述的都是连接正常断开的情况下，两端的状态的变化。如果不是正常断开呢，如进程被杀掉了，机器断电了会怎么样呢？
+
+我们可以做几个实验  
+首先启动一个tcp服务，这里直接使用`nc`命令行监听一个断开`11100`。然后我们用netstat查看下tcp的状态。
+```bash
+$ nc -lk 11100
+
+$ netstat -an | grep 11100
+```
+![tcp1](./images/tcp1.png)
+
+接下来我们模拟客户端连接
+```bash
+$ nc localhost 11100
+
+$ netstat -an | grep 11100
+```
+![tcp2](./images/tcp2.png)
+
+可见，两端都已经建立连接完毕，接下里我们做一些异常断开。
+
+### 其中一端的连接被kill
+我们先kill掉客户端的进程
+```bash
+$ ps aux | grep -v grep | grep "nc localhost 11100"
+```
+![tcp3](./images/tcp3.png)
+```
+$ kill 56881
+
+$ netstat -an | grep 11100
+```
+![tcp4](./images/tcp4.png)
+
+
+
+## websocket
 tcp是传输层的协议，tcp三次握手后，应用层协议http也便建立了连接。而对于当今web的发展情况，http仍有许多瓶颈。
 
 1. 一条连接只能发送一个请求。
