@@ -1,9 +1,12 @@
-### tcp建立连接
-tcp连接的建立需要经历”三次握手“的过程。过程如下
+![tcp建立连接和释放连接](https://github.com/zhengweikeng/blog/blob/master/posts/2016/images/tcp%E5%BB%BA%E7%AB%8B%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%87%8A%E6%94%BE%E8%BF%9E%E6%8E%A5.png?raw=true)
 
-1. client发送SYN包（值为j）以及SEQ包到server端，此时client进入SYN_SENT状态。此为第一次握手。
-2. server端收到SYN包后，发送一个ACK（值为seq+1）确认包和SYN（值为k）给client，此时server进入SYN_RECV状态。此为第二次握手。
-3. client收到SYN+ACK包后，向server发送一个ACK（值为k+1），该包发送完成后，client和server均进入ESTABLISH状态。此为第三次握手。
+### tcp建立连接
+tcp连接的建立需要经历”三次握手“的过程。过程和两端的状态如下
+
+1. client端为closed状态，服务端为listen状态
+2. client发送SYN包（值为j）到server端，此时client进入`SYN_SENT`状态，此为第一次握手。
+3. server端收到SYN包后，发送一个ACK（值为seq+1）确认包和SYN（值为k）给client，此时server进入`SYN_RCVD`状态。此为第二次握手。
+4. client收到SYN+ACK包后，向server发送一个ACK（值为k+1），此时客户端便进入`ESTABLISHED`状态。server收到ack包后也进入`ESTABLISHED`状态，完成第三次握手。
 
 client和server两端状态变化如下：
 
@@ -12,88 +15,76 @@ CLOSED->SYN_SEND->ESTABLISH
 server:  
 CLOSED->LISTEN->SYN_RECV->ESTABLISH
 
-为什么是3次握手，不是2次或者4次呢？
-
-建立一个可靠的tcp连接，至少是要3次的，既然3次就足够，为什么还要4次。  
-那2次可以么。假设2次就建立连接，那么会出现如下情况。  
-client发送一个A请求，由于网络原因，没有那么快送达server端。此时client便废弃该请求，重新发起请求B，请求B成功送达server端，并得到响应。  
+#### 问题一：为什么是3次握手，不是2次或者4次呢？  
+无论任何时候，我们都得假设网络是不可靠的，也就是说任何时候都可能丢包或者包延时到达。  
+如果只通过两次握手，client发送一个A请求，由于网络原因，没有那么快送达server端。此时client便废弃该请求，重新发起请求B，请求B成功送达server端，并得到响应。  
 如果此时便建立连接，若之前的请求A终于到达server端了，由于请求的格式都是正常的，于是也发送响应回去client，而client则认为该请求已经被废弃。于是server端就一直挂着这个请求，造成资源浪费。
 
-因此，才需要让client再发送一次确认给server端，server接收确认后才建立连接，便可以避免这种情况了。
+那为什么不是4次或者5次呢？  
+在客户端最后发完ack包后，服务端依旧可以回复一个ack的ack包，其实这是可以的，但是如此下去便进入一个死循环了，既然可以4次，也可以有40次、400次。  
+在网络不可靠的前提下，即使在多次ack也无法保证是可靠的，因此也就没必要再多余的进行反复确认了。
+
+#### 问题二：包的序号从0或者1开始么？  
+包的序号不是从0后者1开始的，每个连接的起始序号都不一样。想象如下场景，A连上B后，给B发送了1、2、3个包，但是3号包绕路了，B一直没收到。  
+此时A断线了，重连上B后，又发送了1、2号包，B也都收到了。此时那个绕路的3号包到达B了，B会认为它就是下一个包，于是发生了错误。
+
+#### 问题三：如果服务端没有收到最后的ack包，客户端可以开始发数据么？
+是可以的，而且实际上也是这么做的，因为客户端在收到服务端的syn和ack包后，就已经进入`ESTLIBASHED`状态，可以开始发数据。  
+但是如果此时服务端一直没有收到ack包，那么通过滑动窗口机制，窗口大小会不断缩小，最终客户端会堵塞住，无法发包。   
 
 ### tcp连接释放
-Tcp释放连接的过程需要经历“四次挥手”的过程，为什么建立连接只需要3次握手，而释放连接需要进行4次挥手呢？
+Tcp释放连接的过程需要经历“四次挥手”的过程。
+1. 由于服务端和客户端都可以主动断开连接，因此两端应该描述为发送方和接收方，此时两端状态均为`ESTLIBASHED`
+2. 发送方发送一个FIN包给接收方，告诉对方要断开连接了，此时发送方进入`FIN_WAIT_1`状态
+3. 接收方收到FIN包后，为了告诉发送方已经收到FIN包，于是发送ACK包给发送方，此时接收方进入`CLOSE_WAIT`状态
+4. 发送方收到ACK包后，进入`FIN_WAIT_2`状态
+5. 接收方在确认自己没有数据要发给发送方时，便会发送FIN包给发送方，告诉它我也要断开连接了，此时接收方进入`LAST_ACK`，等待发送方最后的ACK包
+6. 发送方收到FIN包后，回复给接收方一个ACK包，此时自己进入`TIME_WAIT`状态，间隔2个MSL（Maximum Segment Lifetime，报文最大生存时间）后断开连接进入`CLOSED`状态。
+7. 接收方收到ACK后，就进入`CLOSED`状态
 
-很简单，因为TCP连接是全双工（Full Duplex）的，因此造成了两个方向都需要进行关闭。
-
-怎么理解呢？
-
-client和server，需要关闭连接，此时client通知server我要关闭连接了，此时关闭的只会是client这一端的连接，而server端并未关闭，它依旧能够向client发送数据。
-
-当然，关闭连接也可以是server作为主动方的。
-
-接下来以client主动断开与server端的连接为场景来描述整个过程，我们把它分为两个阶段，分别为client端关闭连接和server端关闭连接。
-
-先上图  
-![tcp建立连接和释放连接](https://github.com/zhengweikeng/blog/blob/master/posts/2016/images/tcp%E5%BB%BA%E7%AB%8B%E8%BF%9E%E6%8E%A5%E5%92%8C%E9%87%8A%E6%94%BE%E8%BF%9E%E6%8E%A5.png?raw=true)
-
-第一阶段  
-
-1. 首先client会发送一个FIN包给server（同时还有ack和seq包），这是要告诉server，我已经没有数据要发给你了，此时client处于FIN_WAIT_1状态。接收到FIN包的server处于CLOSE_WAIT的状态。
-2. server发回一个ACK（值为client传过来的seq+1）和seq（值为client传过来的ack的值）给client。client收到server发过来的包后确认关闭连接，此时client处于FIN_WAIT_2。
-
-第二阶段  
-
-1. server在接收到client的FIN后，得知client要断开tcp连接了，于是在发送完ack和seq给client后，自己发送一个FIN包给client（也带有ack和seq包），告诉client我也要断开连接了，此时server处于LAST_ACK状态。  
-2. client接收到server的FIN信息后，会回复server一个ack包，并且会进入TIME_WAIT状态，持续2个MSL（Max Segment Lifetime），这个时间windows下为240s。而server接收到client后便关闭连接。client在指定时间过后仍然没有接收到server的数据，确认server已经没有数据过来，也关闭了连接。
-
-此时双方都进入CLOSED状态。
-
-### 分析一下
-
-server在接收到client的FIN后，会返回ACK给client，此时关闭的就是读通道，也就是说不能再从这个连接中读信息了。
-
-client收到server发送过来的对自己的FIN的确认包ack后，便关闭了写通道，不能再向连接中写信息了。
-
-server也开始关闭连接，发送FIN给client，而client收到后便回复ack给server，同时关闭读通道，自己则进入TIME_WAIT状态。
-
-server收到client发送过来的对自己的FIN的确认包ack后，便关闭了写通道，状态转化为CLOSED。
-
-而client在TIME_WAIT结束后也进入CLOSED状态。
-
-因此client和server会经历如下状态的转移  
-client:
+因此发送方和接收方会经历如下状态的转移  
+发送方:
 FIN_WAIT_1->FIN_WAIT_2->TIME_WAIT->CLOSED  
-server:
+接收方:
 CLOSE_WAIT->LAST_ACK->CLOSED
 
-### 其中有几个关键点需要注意：
+同建立连接一个道理，基于网络不可靠的原因，最后接收方收到ACK后，如果再回复ACK的ACK，便进入死循环了，所以到收到ACK就完成断开了流程了。
 
-1. 这个TIME_WAIT的作用是什么？  
-   这个[博客](http://www.cnblogs.com/Jessy/p/3535612.html)是这么解释的。
-   ```
-   原因有二：
-  一、保证TCP协议的全双工连接能够可靠关闭
-  二、保证这次连接的重复数据段从网络中消失
+#### 问题一：为什么接收方在FIN包后不能一次性发送ACK和FIN包给发送方，就像建立连接时一次性发送SYN和ACK包一样。
+在收到FIN包，只是发送方这边不再发送数据了，但是接收方可能还有数据在发送给发送方，所以此时不能直接断开连接，也因此不能立马发送FIN包。  
+因此接收方先回了一个ACK包，等到确认自己没有数据要发给发送方了，自己也会做一些结束连接的准备，之后便再发送FIN包给发送方。
 
-  先说第一点，如果Client直接CLOSED了，那么由于IP协议的不可靠性或者是其它网络原因，导致Server没有收到Client最后回复的ACK。那么Server就会在超时之后继续发送FIN。  
-  此时由于Client已经CLOSED了，就找不到与重发的FIN对应的连接，最后Server就会收到RST而不是ACK，Server就会以为是连接错误把问题报告给高层。  
-  这样的情况虽然不会造成数据丢失，但是却导致TCP协议不符合可靠连接的要求。  
-  所以，Client不是直接进入CLOSED，而是要保持TIME_WAIT，当再次收到FIN的时候，能够保证对方收到ACK，最后正确的关闭连接。
+#### 问题二：CLOSE_WAIT的解释。  
+我们知道接收方在接收到FIN后，发送ACK之前会进入CLOSE_WAIT，如果长期处于这个状态，或者说出现大量CLOSE_WAIT，说明ACK包一直没有发出，这时候就应该检查代码了。 
 
-  再说第二点，如果Client直接CLOSED，然后又再向Server发起一个新连接，我们不能保证这个新连接与刚关闭的连接的端口号是不同的。也就是说有可能新连接和老连接的端口号是相同的。  
-  一般来说不会发生什么问题，但是还是有特殊情况出现：假设新连接和已经关闭的老连接端口号是一样的，如果前一次连接的某些数据仍然滞留在网络中，这些延迟数据在建立新连接之后才到达Server，由于新连接和老连接的端口号是一样的，又因为TCP协议判断不同连接的依据是socket pair。  
-  于是，TCP协议就认为那个延迟的数据是属于新连接的，这样就和真正的新连接的数据包发生混淆了。所以TCP连接还要在TIME_WAIT状态等待2倍MSL，这样可以保证本次连接的所有数据都从网络中消失。  
-  ```   
+#### 问题三：这个TIME_WAIT的作用是什么？  
+这个[博客](http://www.cnblogs.com/Jessy/p/3535612.html)是这么解释的。
 
-2. CLOSE_WAIT的解释。  
-   在以上事例，我们知道server在接收到FIN后，发送ACK之前会进入CLOSE_WAIT，如果长期处于这个状态，或者说服务器出现大量CLOSE_WAIT，说明ACK包一直没有发出，这时候就应该检查代码了。 
+原因有二：
+1. 保证TCP协议的全双工连接能够可靠关闭
+1. 保证这次连接的重复数据段从网络中消失
 
-3. TIME_WAIT注意事项  
-   从事例我们知道，主动关闭连接的一方会经历TIME_WAIT状态，在该状态下的socket是不会被回收的。而如果是服务器端主动关闭连接，则可能会面临处于大量TIME_WAIT的情况（因为连接很多嘛），会严重影响服务器的处理能力。  
-   怎么解决呢，那就减少服务器端TIME_WAIT的时间咯。
+如果发送方在发送ACK后直接CLOSED了，那么由于IP协议的不可靠性或者是其它网络原因，导致接收方没有收到发送方最后回复的ACK。那么接收方就会在超时之后继续发送FIN。
 
-综上所述，client和server从建立连接到断开连接，整个状态的变化如下：
+此时由于发送方已经CLOSED了，就找不到与重发的FIN对应的连接，最后接收方就会收到RST而不是ACK，接收方就会以为是连接错误把问题报告给高层。  
+
+这样的情况虽然不会造成数据丢失，但是却导致TCP协议不符合可靠连接的要求。  
+
+所以，发送方不是直接进入CLOSED，而是要保持TIME_WAIT，如果再次收到接收方的FIN包后可以继续回复ACK包，这能够能够保证对方收到ACK，最后正确的关闭连接。
+
+第二个原因，如果发送方直接CLOSED，然后又再向接收方发起一个新连接，我们不能保证这个新连接与刚关闭的连接的端口号是不同的。也就是说有可能新连接和老连接的端口号是相同的。  
+
+一般来说不会发生什么问题，但是还是有特殊情况出现：假设新连接和已经关闭的老连接端口号是一样的，如果前一次连接的某些数据仍然滞留在网络中，这些延迟数据在建立新连接之后才到达接收方，由于新连接和老连接的端口号是一样的，又因为TCP协议判断不同连接的依据是socket pair。  
+
+于是，TCP协议就认为那个延迟的数据是属于新连接的，这样就和真正的新连接的数据包发生混淆了。
+
+所以TCP连接还要在TIME_WAIT状态等待2倍MSL，这样可以保证本次连接的所有数据都从网络中消失。  
+
+#### TIME_WAIT注意事项  
+从事例我们知道，主动关闭连接的一方会经历TIME_WAIT状态，在该状态下的socket是不会被回收的。而如果是服务器端主动关闭连接，则可能会面临处于大量TIME_WAIT的情况（因为连接很多嘛），会严重影响服务器的处理能力。  
+怎么解决呢，那就减少服务器端TIME_WAIT的时间咯。
+
+综上所述，发送方和server从建立连接到断开连接，整个状态的变化如下：
 
 client:  
 CLOSED->SYN_SEND->ESTABLISH->FIN_WAIT_1->FIN_WAIT_2->TIME_WAIT->CLOSED  
