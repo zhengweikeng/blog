@@ -159,6 +159,9 @@ $ netstat -an | grep 11100
 ```
 ![tcp4](./images/tcp4.png)
 
+## tcp包头格式
+![tcp9](./images/tcp9.png)
+
 ## websocket
 tcp是传输层的协议，tcp三次握手后，应用层协议http也便建立了连接。而对于当今web的发展情况，http仍有许多瓶颈。
 
