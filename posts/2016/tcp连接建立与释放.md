@@ -169,7 +169,7 @@ $ netstat -an | grep 11100
 3. 然后就是确认序号（Acknowledgement Number），长度也是32位（4个字节），也就是我们常说的ack。通过之前的握手流程，我们知道，ack就是来确认哪些包已经被确认收到了，例如服务端回复了一个ack number为350，那么说明350之前的包服务端都已经收到了，接下来客户端就应该开始发送seq number为350的包了。如果客户端没有收到ack，那么就应该重复发送。
 4. 然后是数据偏移位（data offset），长度为4位，单位为4个字节，它说明了头部的大小，也能说明数据是从第几个字节开始的，例如wireshark的截图中，offset的值是8，即`8 * 4 = 32`个字节，也即头部共占32个字节。
 5. 接下来是保留位（Reserved），长度为4位，为了以后扩展用的，一般设置为0，即使收到的数据该值不为0也无所谓。
-6. 然后就是控制位（control flag），长度8位（1个字节）。每一位从左到右分别是CWR、ECE、URG、ACK、PSH、RST、SYN、FIN。给相应的为赋值为1则代表了对应的含义。
+6. 然后就是控制位（control flag），长度8位（1个字节）。每一位从左到右分别是CWR、ECE、URG、ACK、PSH、RST、SYN、FIN。给相应的为赋值为1则代表了对应的含义。
     1. CWR（congestion window reduce）: 说明有窗口变动
     2. ECE（ECN-Echo），设置为1会通知对方，对方的网络到这边会有拥塞
     3. URG（Urgent flag），有紧急处理的数据
