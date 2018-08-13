@@ -112,7 +112,9 @@ nc，和telnet一样，`nc 192.168.33.10 9999`
 ### 系统信息
 df，查看硬盘信息，`df -lh`
 
-查看cpu信息，`cat /proc/cpuinfo`
+查看cpu信息，`cat /proc/cpuinfo`  
+
+vmstat，显示虚拟内存状态，还可以看进程、内存、I/O等系统运行状态
 
 ps，查看进程信息，`ps aux | grep tomcat`
 
