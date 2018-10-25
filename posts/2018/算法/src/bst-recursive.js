@@ -84,6 +84,44 @@ console.log(node.key);
   }
 }
 
+function deleteMin(node) {
+  if (node.left == null) {
+    return node.right
+  }
+
+  node.left = deleteMin(node.left)
+  node.size = size(node.left) + size(node.right) + 1
+  return node
+}
+
+function deleteMax(node) {
+  if (node.right == null) {
+    return node.left
+  }
+
+  node.right = deleteMax(node.right)
+  node.size = size(node.left) + size(node.right) + 1
+  return node
+}
+
+function deleteKey(node, key) {
+  if (key < node.key) {
+    node.left = deleteKey(node.left, key)
+  } else if (key > node.key) {
+    node.right = deleteKey(node.right, key)
+  } else {
+    if (node.right == null) return node.left
+    if (node.left == null) return node.right
+    const t = node
+    node = min(node.right)
+    node.right = deleteMin(t.right)
+    node.left = t.left
+  }
+
+  node.size = size(node.left) + size(node.right) + 1
+  return node
+}
+
 const tree = createTree(10, 'a')
 console.log(search(tree, 10));
 put(tree, 5, 'b')
@@ -95,4 +133,6 @@ put(tree, 19, 'g')
 // console.log(tree, size(tree));
 // console.log(min(tree));
 // console.log(floor(tree, 6));
-console.log(ceiling(tree, 6));
+// console.log(ceiling(tree, 6));
+// console.log(deleteMin(tree));
+// console.log(deleteMax(tree));
