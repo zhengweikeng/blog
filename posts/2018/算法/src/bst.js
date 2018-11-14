@@ -45,6 +45,14 @@ function put(tree, key, value) {
   return tree
 }
 
+function getHeight(node) {
+  if (node == null) {
+    return 0
+  }
+
+  return Math.max(getHeight(node.left), getHeight(node.right)) + 1
+}
+
 const tree = createTree(10, 'a')
 put(tree, 5, 'b')
 put(tree, 6, 'c')
@@ -53,3 +61,4 @@ put(tree, 1, 'e')
 put(tree, 2, 'f')
 put(tree, 19, 'g')
 console.log(tree);
+console.log(getHeight(tree));
