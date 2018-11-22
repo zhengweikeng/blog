@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 type linkList struct {
 	value int
 	next  *linkList
@@ -36,17 +32,17 @@ func (link *linkList) insert(value int) {
 // 	}
 // }
 
-func main() {
-	link1 := linkList{
-		value: 1,
-	}
+// func main() {
+// 	link1 := linkList{
+// 		value: 1,
+// 	}
 
-	link2 := linkList{
-		value: 2,
-	}
-	link1.next = &link2
+// 	link2 := linkList{
+// 		value: 2,
+// 	}
+// 	link1.next = &link2
 
-	link1.insert(3)
+// 	link1.insert(3)
 
-	fmt.Println(link1.value, link1.next.value, link1.next.next.value)
-}
+// 	fmt.Println(link1.value, link1.next.value, link1.next.next.value)
+// }

@@ -25,7 +25,7 @@ func insertSort(arr []int) {
 	}
 }
 
-func main() {
-	arr := []int{4, 5, 6, 1, 3, 2}
-	insertSort(arr)
-}
+// func main() {
+// 	arr := []int{4, 5, 6, 1, 3, 2}
+// 	insertSort(arr)
+// }
