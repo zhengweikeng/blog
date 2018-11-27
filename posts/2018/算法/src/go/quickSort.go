@@ -61,8 +61,8 @@ func partition2(arr []int, start, end int) int {
 	return i
 }
 
-func main() {
-	arr := []int{5, 2, 4, 7, 1, 3, 2, 6}
-	quickSort(arr, 0, len(arr)-1)
-	fmt.Println(arr)
-}
+// func main() {
+// 	arr := []int{5, 2, 4, 7, 1, 3, 2, 6}
+// 	quickSort(arr, 0, len(arr)-1)
+// 	fmt.Println(arr)
+// }
