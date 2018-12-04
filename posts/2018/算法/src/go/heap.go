@@ -67,9 +67,9 @@ func printHeap(data []int) {
 	fmt.Println(data[1:])
 }
 
-func main() {
-	data := []int{0, 33, 17, 21, 16, 13, 15, 9, 5, 6, 7, 8, 1, 2}
+// func main() {
+// 	data := []int{0, 33, 17, 21, 16, 13, 15, 9, 5, 6, 7, 8, 1, 2}
 
-	data = insert(data, 22)
-	printHeap(data)
-}
+// 	data = insert(data, 22)
+// 	printHeap(data)
+// }
