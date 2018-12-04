@@ -43,6 +43,7 @@ func bfs(adj []list.List, s, t int) {
 		prev[i] = -1
 	}
 
+	fmt.Println("bfs: ")
 	for queue.Len() != 0 {
 		// 队首出队
 		w := queue.Remove(queue.Front()).(int)
@@ -74,19 +75,60 @@ func print(prev []int, s, t int) {
 	fmt.Print(t, " ")
 }
 
+var found = false
+
+func dfs(adj []list.List, s, t int) {
+	found = false
+	size := len(adj)
+
+	visited := make([]bool, size)
+
+	// 访问路径
+	prev := make([]int, size)
+
+	for i := 0; i < size; i++ {
+		prev[i] = -1
+	}
+
+	recurDfs(adj, s, t, visited, prev)
+	fmt.Println("\ndfs:")
+	print(prev, s, t)
+}
+
+func recurDfs(adj []list.List, w, t int, visited []bool, prev []int) {
+	if found {
+		return
+	}
+
+	visited[w] = true
+	if w == t {
+		found = true
+		return
+	}
+
+	for q := adj[w].Front(); q != nil; q = q.Next() {
+		val := q.Value.(int)
+		if !visited[val] {
+			prev[val] = w
+			recurDfs(adj, val, t, visited, prev)
+		}
+	}
+}
+
 func main() {
 	adj := createAdjlist(8)
+	addUndirectEdge(adj, 0, 3)
 	addUndirectEdge(adj, 0, 1)
 	addUndirectEdge(adj, 0, 2)
-	addUndirectEdge(adj, 0, 3)
 
 	addUndirectEdge(adj, 1, 4)
 	addUndirectEdge(adj, 1, 5)
 
-	addUndirectEdge(adj, 3, 6)
 	addUndirectEdge(adj, 3, 7)
+	addUndirectEdge(adj, 3, 6)
 
 	addUndirectEdge(adj, 6, 4)
 
 	bfs(adj, 0, 4)
+	dfs(adj, 0, 4)
 }
