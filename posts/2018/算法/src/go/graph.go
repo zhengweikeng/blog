@@ -115,20 +115,20 @@ func recurDfs(adj []list.List, w, t int, visited []bool, prev []int) {
 	}
 }
 
-func main() {
-	adj := createAdjlist(8)
-	addUndirectEdge(adj, 0, 3)
-	addUndirectEdge(adj, 0, 1)
-	addUndirectEdge(adj, 0, 2)
+// func main() {
+// 	adj := createAdjlist(8)
+// 	addUndirectEdge(adj, 0, 3)
+// 	addUndirectEdge(adj, 0, 1)
+// 	addUndirectEdge(adj, 0, 2)
 
-	addUndirectEdge(adj, 1, 4)
-	addUndirectEdge(adj, 1, 5)
+// 	addUndirectEdge(adj, 1, 4)
+// 	addUndirectEdge(adj, 1, 5)
 
-	addUndirectEdge(adj, 3, 7)
-	addUndirectEdge(adj, 3, 6)
+// 	addUndirectEdge(adj, 3, 7)
+// 	addUndirectEdge(adj, 3, 6)
 
-	addUndirectEdge(adj, 6, 4)
+// 	addUndirectEdge(adj, 6, 4)
 
-	bfs(adj, 0, 4)
-	dfs(adj, 0, 4)
-}
+// 	bfs(adj, 0, 4)
+// 	dfs(adj, 0, 4)
+// }
