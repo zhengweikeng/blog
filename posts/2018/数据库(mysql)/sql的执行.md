@@ -38,6 +38,11 @@ innodb_log_file_size: 50331648
 innodb_log_group_home_dir: ./
 ```
 
+## undo log
+这个日志和redo log很像，不过它记录的是数据被修改前的值，可以用来在事务失败的时候进行rollback。
+
+例如某个事务id为100的事务，想要修改数据x，原始值为1，修改后的值为2，那么undo log会记录(100, x, 1)。而redo log记录的则是(100, x, 2)。
+
 ## bin log
 上面说过，redo log是InnoDb引擎独有的，那么bin log就是mysql整体的一个日志，任何引擎都可以使用，称为归档日志。
 
