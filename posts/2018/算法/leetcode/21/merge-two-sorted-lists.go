@@ -3,6 +3,17 @@
 
 package main
 
+type linkList struct {
+	value int
+	next  *linkList
+}
+
+func (link *linkList) insert(value int) {
+	link.next = &linkList{
+		value: value,
+	}
+}
+
 func mergeTwoLists(link1, link2 *linkList) *linkList {
 	newLink := &linkList{
 		value: -1,
@@ -29,4 +40,8 @@ func mergeTwoLists(link1, link2 *linkList) *linkList {
 	}
 
 	return newLink.next
+}
+
+func main() {
+
 }

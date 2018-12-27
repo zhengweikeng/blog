@@ -4,6 +4,11 @@
 
 package main
 
+type linkList struct {
+	value int
+	next  *linkList
+}
+
 func (link *linkList) hasCycle() bool {
 	hasCycle := false
 
@@ -18,4 +23,8 @@ func (link *linkList) hasCycle() bool {
 	}
 
 	return hasCycle
+}
+
+func main() {
+
 }
