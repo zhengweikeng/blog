@@ -6,4 +6,5 @@
 5. [217存在重复元素](./217/contains-duplicate.go)
 6. [234回文链表](./234/palindrome-linked-list.go)
 7. [242有效的字母异位词](./242/valid-anagram.go)
-8. [876链表的中间结点](./876/middle-of-the-linked-list.go)
+8. [287寻找重复数](./287/find-the-duplicate-number.go)
+9. [876链表的中间结点](./876/middle-of-the-linked-list.go)
