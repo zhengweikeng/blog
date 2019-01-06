@@ -7,6 +7,7 @@
 * [219 存在重复元素 II](./219/contains-duplicate-ii.go)
 * [220 存在重复元素 III](./220/contains-duplicate-iii.go)
 * [234 回文链表](./234/palindrome-linked-list.go)
+* [239 滑动窗口最大值](./239/sliding-window-maximum.go)
 * [242 有效的字母异位词](./242/valid-anagram.go)
 * [287 寻找重复数](./287/find-the-duplicate-number.go)
 * [703 数据流中的第K大元素](./703/kth-largest-element-in-a-stream.go)
