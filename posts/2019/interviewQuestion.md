@@ -75,6 +75,28 @@
 
 ## Redis
 ### redis的底层数据结构了解多少
+字符串采用动态字符串实现，数据结构为SDS，通过预先分配一个容量减少内存的频繁分配，也记录了字符串的长度大小。
+```c
+stuct SDS<T> {
+    T capacity 
+    T len
+    byte flags
+    byte[] content
+}
+```
+
+列表：
+1. 在元素较少的时候，内部采用的是压缩列表（ziplist），通过分配一块连续的内存，将所有元素紧挨着一起存储。
+    ```c
+    stuct ziplist<T> {
+        int32 zlbyts; // 整个压缩列表占用字节数
+        int32 zltail_offset; // 最后一个元素距离列表起始位置的偏移量，用于快速定位最后一个节点，实现双向遍历。
+        int16 zllength; // 元素个数
+        T[]   entries; // 元素内容列表，挨个挨个紧凑存储
+        int8  zlend;  // 标志压缩列表的结束，值恒为 0xFF
+    }
+    ```
+2. 在元素较多的时候，会采用快速列表（quicklist），因为普通的链表需要附加指针的空间太大，会浪费空间，加重内存的碎片化
 
 ### 知道动态字符串sds的优缺点么？（sds是redis底层数据结构之一）
 
@@ -86,6 +108,7 @@ hyperloglog、geo、Pub/Sub
 bloomfilter
 
 ### 什么是缓存穿透？如何避免？什么是缓存雪崩？何如避免？
+[缓存](https://github.com/zhengweikeng/blog/blob/master/posts/2018/redis/%E4%BC%98%E5%8C%96.md)
 
 ### redis分布式锁
 
