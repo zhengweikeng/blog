@@ -14,7 +14,7 @@
     - [redis分布式锁](#redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81)
     - [简述Redis分布式锁的缺陷？](#%E7%AE%80%E8%BF%B0redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E7%9A%84%E7%BC%BA%E9%99%B7)
     - [加锁机制，锁互斥机制，watch dog自动延期机制，可重入加锁机制，锁释放机制是什么？](#%E5%8A%A0%E9%94%81%E6%9C%BA%E5%88%B6%E9%94%81%E4%BA%92%E6%96%A5%E6%9C%BA%E5%88%B6watch-dog%E8%87%AA%E5%8A%A8%E5%BB%B6%E6%9C%9F%E6%9C%BA%E5%88%B6%E5%8F%AF%E9%87%8D%E5%85%A5%E5%8A%A0%E9%94%81%E6%9C%BA%E5%88%B6%E9%94%81%E9%87%8A%E6%94%BE%E6%9C%BA%E5%88%B6%E6%98%AF%E4%BB%80%E4%B9%88)
-    - [Redis 的 Setnx 命令是如何实现分布式锁的？](#redis-%E7%9A%84-setnx-%E5%91%BD%E4%BB%A4%E6%98%AF%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E7%9A%84)
+    - [Redis 的Setnx命令是如何实现分布式锁的？](#redis-%E7%9A%84setnx%E5%91%BD%E4%BB%A4%E6%98%AF%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E7%9A%84)
     - [说说对Setnx 的实现锁的原理的理解？](#%E8%AF%B4%E8%AF%B4%E5%AF%B9setnx-%E7%9A%84%E5%AE%9E%E7%8E%B0%E9%94%81%E7%9A%84%E5%8E%9F%E7%90%86%E7%9A%84%E7%90%86%E8%A7%A3)
     - [如何避免死锁的出现？](#%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81%E7%9A%84%E5%87%BA%E7%8E%B0)
     - [Redis里面有1亿个key，其中有10w个key是以某个固定的已知的前缀开头的，如何将它们全部找出来？](#redis%E9%87%8C%E9%9D%A2%E6%9C%891%E4%BA%BF%E4%B8%AAkey%E5%85%B6%E4%B8%AD%E6%9C%8910w%E4%B8%AAkey%E6%98%AF%E4%BB%A5%E6%9F%90%E4%B8%AA%E5%9B%BA%E5%AE%9A%E7%9A%84%E5%B7%B2%E7%9F%A5%E7%9A%84%E5%89%8D%E7%BC%80%E5%BC%80%E5%A4%B4%E7%9A%84%E5%A6%82%E4%BD%95%E5%B0%86%E5%AE%83%E4%BB%AC%E5%85%A8%E9%83%A8%E6%89%BE%E5%87%BA%E6%9D%A5)
@@ -23,7 +23,6 @@
     - [主从间的同步机制](#%E4%B8%BB%E4%BB%8E%E9%97%B4%E7%9A%84%E5%90%8C%E6%AD%A5%E6%9C%BA%E5%88%B6)
     - [聊聊redis sentinal和redis cluster](#%E8%81%8A%E8%81%8Aredis-sentinal%E5%92%8Credis-cluster)
     - [Redis主要消耗什么物理资源？](#redis%E4%B8%BB%E8%A6%81%E6%B6%88%E8%80%97%E4%BB%80%E4%B9%88%E7%89%A9%E7%90%86%E8%B5%84%E6%BA%90)
-    - [Redis有哪几种数据淘汰策略？](#redis%E6%9C%89%E5%93%AA%E5%87%A0%E7%A7%8D%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5)
     - [为什么Redis需要把所有数据放到内存中？](#%E4%B8%BA%E4%BB%80%E4%B9%88redis%E9%9C%80%E8%A6%81%E6%8A%8A%E6%89%80%E6%9C%89%E6%95%B0%E6%8D%AE%E6%94%BE%E5%88%B0%E5%86%85%E5%AD%98%E4%B8%AD)
     - [说说Redis哈希槽的概念？](#%E8%AF%B4%E8%AF%B4redis%E5%93%88%E5%B8%8C%E6%A7%BD%E7%9A%84%E6%A6%82%E5%BF%B5)
     - [Redis集群的主从复制模型是怎样的？](#redis%E9%9B%86%E7%BE%A4%E7%9A%84%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E6%A8%A1%E5%9E%8B%E6%98%AF%E6%80%8E%E6%A0%B7%E7%9A%84)
@@ -35,9 +34,7 @@
     - [Redis集群方案什么情况下会导致整个集群不可用？](#redis%E9%9B%86%E7%BE%A4%E6%96%B9%E6%A1%88%E4%BB%80%E4%B9%88%E6%83%85%E5%86%B5%E4%B8%8B%E4%BC%9A%E5%AF%BC%E8%87%B4%E6%95%B4%E4%B8%AA%E9%9B%86%E7%BE%A4%E4%B8%8D%E5%8F%AF%E7%94%A8)
     - [怎么理解Redis事务？](#%E6%80%8E%E4%B9%88%E7%90%86%E8%A7%A3redis%E4%BA%8B%E5%8A%A1)
     - [Redis事务相关的命令有哪几个？](#redis%E4%BA%8B%E5%8A%A1%E7%9B%B8%E5%85%B3%E7%9A%84%E5%91%BD%E4%BB%A4%E6%9C%89%E5%93%AA%E5%87%A0%E4%B8%AA)
-    - [Redis key的过期时间和永久有效分别怎么设置？](#redis-key%E7%9A%84%E8%BF%87%E6%9C%9F%E6%97%B6%E9%97%B4%E5%92%8C%E6%B0%B8%E4%B9%85%E6%9C%89%E6%95%88%E5%88%86%E5%88%AB%E6%80%8E%E4%B9%88%E8%AE%BE%E7%BD%AE)
-    - [Redis如何做内存优化？](#redis%E5%A6%82%E4%BD%95%E5%81%9A%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96)
-    - [Redis回收进程如何工作的？](#redis%E5%9B%9E%E6%94%B6%E8%BF%9B%E7%A8%8B%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84)
+    - [Redis如何做内存优化，如何回收进程？](#redis%E5%A6%82%E4%BD%95%E5%81%9A%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96%E5%A6%82%E4%BD%95%E5%9B%9E%E6%94%B6%E8%BF%9B%E7%A8%8B)
 - [数据结构和算法](#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E7%AE%97%E6%B3%95)
   - [数据结构](#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84)
     - [链表和数组的优缺点？](#%E9%93%BE%E8%A1%A8%E5%92%8C%E6%95%B0%E7%BB%84%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9)
@@ -253,8 +250,8 @@ SortedSet：
 
 ### redis有哪些数据结构，分别使用在什么场景？
 string、list、hash、sort、sortedset   
-hyperloglog、geo、Pub/Sub  
-bloomfilter
+bitmap、geo、Pub/Sub  
+hyperloglog、bloomfilter
 
 ### 什么是缓存穿透？如何避免？什么是缓存雪崩？何如避免？
 [缓存](https://github.com/zhengweikeng/blog/blob/master/posts/2018/redis/%E4%BC%98%E5%8C%96.md)
@@ -265,7 +262,7 @@ bloomfilter
 
 ### 加锁机制，锁互斥机制，watch dog自动延期机制，可重入加锁机制，锁释放机制是什么？
 
-### Redis 的 Setnx 命令是如何实现分布式锁的？
+### Redis 的Setnx命令是如何实现分布式锁的？
 
 ### 说说对Setnx 的实现锁的原理的理解？
 
@@ -275,6 +272,7 @@ bloomfilter
 keys和scan
 
 ### 如何使用redis实现队列。又如何实现延时队列。
+[队列和延时队列](https://juejin.im/book/5afc2e5f6fb9a07a9b362527/section/5afc3643518825672034404b)
 
 ### 如何实现持久化
 
@@ -283,8 +281,6 @@ keys和scan
 ### 聊聊redis sentinal和redis cluster
 
 ### Redis主要消耗什么物理资源？
-
-### Redis有哪几种数据淘汰策略？
 
 ### 为什么Redis需要把所有数据放到内存中？
 
@@ -308,11 +304,34 @@ keys和scan
 
 ### Redis事务相关的命令有哪几个？
 
-### Redis key的过期时间和永久有效分别怎么设置？
+### Redis如何做内存优化，如何回收进程？
+redis基于对象引用计数来进行垃圾回收管理。
+```c
+typedef struct redisObject{
+    int4 type;
+    int4 encoding;
+    int24 lru;
+    //引用计数
+    int32 refcount;
+    void *ptr;
+}
+```
+这里有个refcount，用于计算对象的引用计数
+1. 创建一个新对象，属性 refcount 初始化为1
+2. 对象被一个新程序使用，属性 refcount 加1
+3. 对象不再被一个程序使用，属性 refcount 减1
+4. 当对象的引用计数值变为0时，对象所占用的内存就会被释放
 
-### Redis如何做内存优化？
+对象引用计数容易造成内存泄漏（例如A引用B，B引用C，C引用A），redis提供了几种策略来进行内存的优化和释放  
+[maxmemory-policy](https://github.com/zhengweikeng/blog/blob/master/posts/2018/redis/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86.md#maxmemory-policy)
 
-### Redis回收进程如何工作的？
+另外refcount也会用于优化内存。
+```
+set k1 100
+set k2 100
+```
+此时，redis只会创建一个redisObject对象，此时refcount=2，达到共享的作用。  
+![WX20190226-174426@2x](./images/WX20190226-174426@2x.png)
 
 # 数据结构和算法
 ## 数据结构
