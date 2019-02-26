@@ -7,7 +7,7 @@
     - [数据库的高可用结构](#%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8%E7%BB%93%E6%9E%84)
   - [Redis](#redis)
     - [redis的底层数据结构了解多少](#redis%E7%9A%84%E5%BA%95%E5%B1%82%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%BA%86%E8%A7%A3%E5%A4%9A%E5%B0%91)
-    - [知道动态字符串sds的优缺点么？（sds是redis底层数据结构之一）](#%E7%9F%A5%E9%81%93%E5%8A%A8%E6%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2sds%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9%E4%B9%88sds%E6%98%AFredis%E5%BA%95%E5%B1%82%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B9%8B%E4%B8%80)
+    - [知道动态字符串sds的优缺点么？](#%E7%9F%A5%E9%81%93%E5%8A%A8%E6%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2sds%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9%E4%B9%88)
     - [redis单线程特性有什么优缺点？](#redis%E5%8D%95%E7%BA%BF%E7%A8%8B%E7%89%B9%E6%80%A7%E6%9C%89%E4%BB%80%E4%B9%88%E4%BC%98%E7%BC%BA%E7%82%B9)
     - [redis有哪些数据结构，分别使用在什么场景？](#redis%E6%9C%89%E5%93%AA%E4%BA%9B%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%88%86%E5%88%AB%E4%BD%BF%E7%94%A8%E5%9C%A8%E4%BB%80%E4%B9%88%E5%9C%BA%E6%99%AF)
     - [什么是缓存穿透？如何避免？什么是缓存雪崩？何如避免？](#%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E4%BD%95%E5%A6%82%E9%81%BF%E5%85%8D)
@@ -96,6 +96,11 @@ stuct SDS<T> {
     byte[] content
 }
 ```
+而根据字符串的长度，采用了不同的方式存储字符串：
+1. embstr，在字符串长度小于44字节时，使用这种格式存储。优点就是它只需要分配一次空间，redisObject和sds是连续的。缺点就是长度增加导致需要重新分配内存时，整个redisObject和sds都要重新分配。
+   ![WX20190226-153702@2x](./images/WX20190226-161136@2x.png)
+2. raw，字符串长度大于44字节时，使用这种格式。优点就是在重新分配内存的时候只需要分配sds的。缺点就是它需要分配两次内存空间，分别要为redisObject和sds分配空间。
+   ![WX20190226-153702@2x](./images/WX20190226-161317@2x.png)
 
 列表：
 1. 在元素较少的时候（默认是512，redis.conf可配置），内部采用的是压缩列表（ziplist），通过分配一块连续的内存，将所有元素紧挨着一起存储。也因此导致了在扩容的时候，可能需要重新分配内存，将旧的内容拷贝到新的内存地址，在元素很多时就会损耗性能，所以ziplist不合适存储大型字符串。
@@ -114,8 +119,8 @@ stuct SDS<T> {
         optional byte[] content; // 元素内容
     }
     ```
-    ![ziplist](./images/WX20190226-110244.png)
-1. 在元素较多的时候，为了能够快速插入和删除，采用了链表（lintedlist）的方式实现。每个节点都需要存储前一个和后一个节点的地址，每一个指针需要占据8个字节（64位机器）。
+    ![ziplist](./images/WX20190226-163238@2x.png)
+2. 在元素较多的时候，为了能够快速插入和删除，采用了链表（lintedlist）的方式实现。每个节点都需要存储前一个和后一个节点的地址，每一个指针需要占据8个字节（64位机器）。
     ```c
     struct listNode<T> {
         listNode* prev;
@@ -128,7 +133,8 @@ stuct SDS<T> {
         long length;
     }
     ```
-1. 由于链表中每个节点中占据的空间较大（16个字节的指针空间），因此在后续的版本中，实现上被改为了快速列表（quicklist）。将linkedlist按段切分，每一段使用ziplist来紧凑存储，多个ziplist之间使用双向指针串起来。而且还可以对ziplist使用LZF算法进行了压缩存储。
+    ![WX20190226-163333@2x](./images/WX20190226-163333@2x.png)
+3. 由于链表中每个节点中占据的空间较大（16个字节的指针空间），因此在后续的版本中，实现上被改为了快速列表（quicklist）。将linkedlist按段切分，每一段使用ziplist来紧凑存储，多个ziplist之间使用双向指针串起来。而且还可以对ziplist使用LZF算法进行了压缩存储。
     ```c
     struct ziplist_compressed {
         int32 size;
@@ -153,21 +159,95 @@ stuct SDS<T> {
     }
     ```
 
+hash哈希：
+1. 在元素个数小于512个（set-max-intset-entries配置）并且每个元素长度小于64字节，采用ziplist实现
+    ```
+    hset profile name "tome"
+    hset profile age 25
+    hset profile career "Programmer"
+    ```
+    ![WX20190226-162949@2x](./images/WX20190226-162949@2x.png)
+1. 其他情况下采用hashtable实现。
+
+字典中包含2个hashtable，通常其中一个是有值的，在扩容的时候需要分配新的hashtable，然后渐进式搬迁，一个hashtable用于存储旧值，一个用于存储新值。搬迁结束后，旧的hashtable会被删除。   
+```c
+struct dict {
+    ...
+    dictht ht[2];
+}
+
+struct dictht {
+    dictEntry** table; // 二维
+    long size; // 第一维数组的长度
+    long used; // hash表中的元素个数
+    ...
+}
+
+struct dictEntry {
+    void* key;
+    void* val;
+    dictEntry* next; // 链接下一个entry
+}
+```
+字典基于二维结构设计，其中第一维是数组，第二维是链表。数组中存储的是第二维链表中第一个元素的指针。  
+
+关于字典的扩容：  
+正常情况下，当hash表中元素的个数等于第一维数组的长度时，就会开始扩容，扩容的新数组是原数组大小的2倍。不过如果Redis正在做bgsave，为了减少内存页的过多分离 (Copy On Write)，Redis尽量不去扩容 (dict_can_resize)，但是如果hash表已经非常满了，元素的个数已经达到了第一维数组长度的5倍 (dict_force_resize_ratio)，说明hash表已经过于拥挤了，这个时候就会强制扩容。
+
+关于字典的缩容：   
+当 hash 表因为元素的逐渐删除变得越来越稀疏时，Redis 会对 hash 表进行缩容来减少 hash 表的第一维数组空间占用。缩容的条件是元素个数低于数组长度的 10%。缩容不会考虑 Redis 是否正在做 bgsave。
+
 Set集合：
 1. 当set集合容纳的元素都是整数并且元素较少的时候，内部采用intset来存储集合元素，它是一种紧凑的数组结构，同时支持16位、32位和64位整数
-    ```
+    ```c
     struct intset<T> {
         int32 encoding; // 决定整数位宽是16位、32位还是64位
         int32 length;  // 元素个数
         int<T> contents; // 整数数组，可以是16为、32位和64位
     }
     ```
-    ![intset](./images/WX20190226-110244.png)
-2. 当set集合存储的不是整数时，采用了hash结构进行存储。
+    ![intset](./images/WX20190226-164057@2x.png)
+2. 当set集合存储的不是整数时，采用了hash结构进行存储，只是里面的value都是NULL，其他特性和字典一模一样。
 
-hash：采用了字典结构实现。
+SortedSet：
+1. 采用dict字典存储value和score值的映射关系
+2. 元素数量小于128，元素长度都小于64字节，使用ziplist实现
+    ![WX20190226-171214@2x](./images/WX20190226-171214@2x.png)
+3. 采用跳跃表skiplist来作为存储score的数据结构。并且在skiplist的forward指针上增加了一个span属性，用于表示从前一个节点沿着当前层的forward指针跳到当前这个节点中间会跳过多少节点。
+    ```c
+    struct zset {
+        dict *dict;
+        zskiplist *zsl;
+    }
+    struct zslforward {
+        zslnode* item;
+        long span;  // 跨度
+    }
+    struct zslnode {
+        String value;
+        double score;
+        zslforward*[] forwards;  // 多层连接指针
+        zslnode* backward;  // 回溯指针
+    }
+    struct zskiplist {
+        zslnode* header; // 跳跃列表头指针
+        int maxLevel; // 跳跃列表当前的最高层
+        map<string, zslnode*> ht; // hash 结构的所有键值对
+    }
+    ```
+    ![skiplist](./images/WX20190226-153702@2x.png)
 
-### 知道动态字符串sds的优缺点么？（sds是redis底层数据结构之一）
+[redis的五大数据类型实现原理](https://www.cnblogs.com/ysocean/p/9102811.html#_label0_1)
+
+### 知道动态字符串sds的优缺点么？
+优点：
+1. sds结构会直接存储字符串长度，不需要遍历字符串就能得到长度。
+2. 由于申请字符串空间的时候，会通过capacity多申请一些冗余空间，因此在执行append的时候，如果字符串长度不大，可以直接在原数组上直接进行，不需要重新分配空间。
+3. 可以根据当前字符串的大小，定义len和capacity的字段大小，对内存使用得到优化
+4. 根据字符串的长短采用embstr和raw结构来存储，提高性能。
+
+缺点：
+1. 基于优点的第二点，如果append的字符串很大，就需要重新分配空间，并且做字符串复制迁移，这个开销非常大。
 
 ### redis单线程特性有什么优缺点？
 
