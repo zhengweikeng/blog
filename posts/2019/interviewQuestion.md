@@ -75,6 +75,18 @@
 
 ## Redis
 ### redis的底层数据结构了解多少
+最上层统一的头部
+```c
+struct RedisObject {
+    int4 type;
+    int4 encoding;
+    int24 lru;
+    int32 refcount;
+    void *ptr;
+}
+```
+ptr是个指针，指向具体的数据。
+
 字符串采用动态字符串实现，数据结构为SDS，通过预先分配一个容量减少内存的频繁分配，也记录了字符串的长度大小。
 ```c
 stuct SDS<T> {
@@ -86,7 +98,7 @@ stuct SDS<T> {
 ```
 
 列表：
-1. 在元素较少的时候，内部采用的是压缩列表（ziplist），通过分配一块连续的内存，将所有元素紧挨着一起存储。
+1. 在元素较少的时候（默认是512，redis.conf可配置），内部采用的是压缩列表（ziplist），通过分配一块连续的内存，将所有元素紧挨着一起存储。也因此导致了在扩容的时候，可能需要重新分配内存，将旧的内容拷贝到新的内存地址，在元素很多时就会损耗性能，所以ziplist不合适存储大型字符串。
     ```c
     stuct ziplist<T> {
         int32 zlbyts; // 整个压缩列表占用字节数
@@ -95,8 +107,65 @@ stuct SDS<T> {
         T[]   entries; // 元素内容列表，挨个挨个紧凑存储
         int8  zlend;  // 标志压缩列表的结束，值恒为 0xFF
     }
+
+    struct entry {
+        int<var> prevlen; // 前一个 entry 的字节长度 当长度小于254字节，用1个字节存储；否则，用5个字节存储
+        int<var> encoding; // 元素类型编码
+        optional byte[] content; // 元素内容
+    }
     ```
-2. 在元素较多的时候，会采用快速列表（quicklist），因为普通的链表需要附加指针的空间太大，会浪费空间，加重内存的碎片化
+    ![ziplist](./images/WX20190226-110244.png)
+1. 在元素较多的时候，为了能够快速插入和删除，采用了链表（lintedlist）的方式实现。每个节点都需要存储前一个和后一个节点的地址，每一个指针需要占据8个字节（64位机器）。
+    ```c
+    struct listNode<T> {
+        listNode* prev;
+        listNode* next;
+        T value;
+    }
+    struct list {
+        listNode *head;
+        listNode *tail;
+        long length;
+    }
+    ```
+1. 由于链表中每个节点中占据的空间较大（16个字节的指针空间），因此在后续的版本中，实现上被改为了快速列表（quicklist）。将linkedlist按段切分，每一段使用ziplist来紧凑存储，多个ziplist之间使用双向指针串起来。而且还可以对ziplist使用LZF算法进行了压缩存储。
+    ```c
+    struct ziplist_compressed {
+        int32 size;
+        byte[] compressed_data;
+    }
+    struct quicklistNode {
+        quicklistNode* prev;
+        quicklistNode* next;
+        ziplist* zl; // 指向压缩列表 每个ziplist长度为8k，超出后就需要新起一个ziplist，该配置由list-max-ziplist-size决定。
+        int32 size; // ziplist 的字节总数
+        int16 count; // ziplist 中的元素数量
+        int2 encoding; // 存储形式 2bit，原生字节数组还是 LZF 压缩存储。
+        ...
+    }
+    struct quicklist {
+        quicklistNode* head;
+        quicklistNode* tail;
+        long count; // 元素总数
+        int nodes; // ziplist 节点的个数
+        int compressDepth; // LZF 算法压缩深度。默认为0，即不压缩。通过list-compress-depth配置。
+        ...
+    }
+    ```
+
+Set集合：
+1. 当set集合容纳的元素都是整数并且元素较少的时候，内部采用intset来存储集合元素，它是一种紧凑的数组结构，同时支持16位、32位和64位整数
+    ```
+    struct intset<T> {
+        int32 encoding; // 决定整数位宽是16位、32位还是64位
+        int32 length;  // 元素个数
+        int<T> contents; // 整数数组，可以是16为、32位和64位
+    }
+    ```
+    ![intset](./images/WX20190226-110244.png)
+2. 当set集合存储的不是整数时，采用了hash结构进行存储。
+
+hash：采用了字典结构实现。
 
 ### 知道动态字符串sds的优缺点么？（sds是redis底层数据结构之一）
 
