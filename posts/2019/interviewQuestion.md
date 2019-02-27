@@ -21,8 +21,6 @@
     - [redis分布式锁](#redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81)
     - [简述Redis分布式锁的缺陷？](#%E7%AE%80%E8%BF%B0redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E7%9A%84%E7%BC%BA%E9%99%B7)
     - [加锁机制，锁互斥机制，watch dog自动延期机制，可重入加锁机制，锁释放机制是什么？](#%E5%8A%A0%E9%94%81%E6%9C%BA%E5%88%B6%E9%94%81%E4%BA%92%E6%96%A5%E6%9C%BA%E5%88%B6watch-dog%E8%87%AA%E5%8A%A8%E5%BB%B6%E6%9C%9F%E6%9C%BA%E5%88%B6%E5%8F%AF%E9%87%8D%E5%85%A5%E5%8A%A0%E9%94%81%E6%9C%BA%E5%88%B6%E9%94%81%E9%87%8A%E6%94%BE%E6%9C%BA%E5%88%B6%E6%98%AF%E4%BB%80%E4%B9%88)
-    - [Redis 的Setnx命令是如何实现分布式锁的？](#redis-%E7%9A%84setnx%E5%91%BD%E4%BB%A4%E6%98%AF%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E7%9A%84)
-    - [说说对Setnx 的实现锁的原理的理解？](#%E8%AF%B4%E8%AF%B4%E5%AF%B9setnx-%E7%9A%84%E5%AE%9E%E7%8E%B0%E9%94%81%E7%9A%84%E5%8E%9F%E7%90%86%E7%9A%84%E7%90%86%E8%A7%A3)
     - [如何避免死锁的出现？](#%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81%E7%9A%84%E5%87%BA%E7%8E%B0)
     - [Redis里面有1亿个key，其中有10w个key是以某个固定的已知的前缀开头的，如何将它们全部找出来？](#redis%E9%87%8C%E9%9D%A2%E6%9C%891%E4%BA%BF%E4%B8%AAkey%E5%85%B6%E4%B8%AD%E6%9C%8910w%E4%B8%AAkey%E6%98%AF%E4%BB%A5%E6%9F%90%E4%B8%AA%E5%9B%BA%E5%AE%9A%E7%9A%84%E5%B7%B2%E7%9F%A5%E7%9A%84%E5%89%8D%E7%BC%80%E5%BC%80%E5%A4%B4%E7%9A%84%E5%A6%82%E4%BD%95%E5%B0%86%E5%AE%83%E4%BB%AC%E5%85%A8%E9%83%A8%E6%89%BE%E5%87%BA%E6%9D%A5)
     - [如何使用redis实现队列。又如何实现延时队列。](#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8redis%E5%AE%9E%E7%8E%B0%E9%98%9F%E5%88%97%E5%8F%88%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E5%BB%B6%E6%97%B6%E9%98%9F%E5%88%97)
@@ -33,7 +31,9 @@
     - [Redis集群会有写操作丢失吗？为什么？](#redis%E9%9B%86%E7%BE%A4%E4%BC%9A%E6%9C%89%E5%86%99%E6%93%8D%E4%BD%9C%E4%B8%A2%E5%A4%B1%E5%90%97%E4%B8%BA%E4%BB%80%E4%B9%88)
     - [Redis集群之间是如何复制的？](#redis%E9%9B%86%E7%BE%A4%E4%B9%8B%E9%97%B4%E6%98%AF%E5%A6%82%E4%BD%95%E5%A4%8D%E5%88%B6%E7%9A%84)
     - [Redis集群方案什么情况下会导致整个集群不可用？](#redis%E9%9B%86%E7%BE%A4%E6%96%B9%E6%A1%88%E4%BB%80%E4%B9%88%E6%83%85%E5%86%B5%E4%B8%8B%E4%BC%9A%E5%AF%BC%E8%87%B4%E6%95%B4%E4%B8%AA%E9%9B%86%E7%BE%A4%E4%B8%8D%E5%8F%AF%E7%94%A8)
-    - [怎么理解Redis事务？](#%E6%80%8E%E4%B9%88%E7%90%86%E8%A7%A3redis%E4%BA%8B%E5%8A%A1)
+    - [Redis如何使用事务？有什么缺点？](#redis%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E4%BA%8B%E5%8A%A1%E6%9C%89%E4%BB%80%E4%B9%88%E7%BC%BA%E7%82%B9)
+    - [为什么 Redis 的事务不能支持回滚？](#%E4%B8%BA%E4%BB%80%E4%B9%88-redis-%E7%9A%84%E4%BA%8B%E5%8A%A1%E4%B8%8D%E8%83%BD%E6%94%AF%E6%8C%81%E5%9B%9E%E6%BB%9A)
+    - [如何使用redis进行CAS修改缓存的值](#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8redis%E8%BF%9B%E8%A1%8Ccas%E4%BF%AE%E6%94%B9%E7%BC%93%E5%AD%98%E7%9A%84%E5%80%BC)
     - [Redis如何做内存优化，如何回收进程？](#redis%E5%A6%82%E4%BD%95%E5%81%9A%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96%E5%A6%82%E4%BD%95%E5%9B%9E%E6%94%B6%E8%BF%9B%E7%A8%8B)
 - [数据结构和算法](#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E7%AE%97%E6%B3%95)
   - [数据结构](#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84)
@@ -46,8 +46,6 @@
     - [如何判断两个有环单链表有没有交叉点](#%E5%A6%82%E4%BD%95%E5%88%A4%E6%96%AD%E4%B8%A4%E4%B8%AA%E6%9C%89%E7%8E%AF%E5%8D%95%E9%93%BE%E8%A1%A8%E6%9C%89%E6%B2%A1%E6%9C%89%E4%BA%A4%E5%8F%89%E7%82%B9)
 - [网络](#%E7%BD%91%E7%BB%9C)
   - [网络基础](#%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80)
-    - [http1.0和1.1的区别？](#http10%E5%92%8C11%E7%9A%84%E5%8C%BA%E5%88%AB)
-    - [描述下http2.0有哪些特性](#%E6%8F%8F%E8%BF%B0%E4%B8%8Bhttp20%E6%9C%89%E5%93%AA%E4%BA%9B%E7%89%B9%E6%80%A7)
     - [一个请求的过程（或者说从浏览器地址栏回车后发生的所有过程）](#%E4%B8%80%E4%B8%AA%E8%AF%B7%E6%B1%82%E7%9A%84%E8%BF%87%E7%A8%8B%E6%88%96%E8%80%85%E8%AF%B4%E4%BB%8E%E6%B5%8F%E8%A7%88%E5%99%A8%E5%9C%B0%E5%9D%80%E6%A0%8F%E5%9B%9E%E8%BD%A6%E5%90%8E%E5%8F%91%E7%94%9F%E7%9A%84%E6%89%80%E6%9C%89%E8%BF%87%E7%A8%8B)
     - [http请求包含哪些数据结构？](#http%E8%AF%B7%E6%B1%82%E5%8C%85%E5%90%AB%E5%93%AA%E4%BA%9B%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84)
     - [什么是http的长连接和短连接？如何配置使用长连接](#%E4%BB%80%E4%B9%88%E6%98%AFhttp%E7%9A%84%E9%95%BF%E8%BF%9E%E6%8E%A5%E5%92%8C%E7%9F%AD%E8%BF%9E%E6%8E%A5%E5%A6%82%E4%BD%95%E9%85%8D%E7%BD%AE%E4%BD%BF%E7%94%A8%E9%95%BF%E8%BF%9E%E6%8E%A5)
@@ -63,7 +61,13 @@
     - [如果出现大量的LAST_ACK状态，说明什么原因？](#%E5%A6%82%E6%9E%9C%E5%87%BA%E7%8E%B0%E5%A4%A7%E9%87%8F%E7%9A%84lastack%E7%8A%B6%E6%80%81%E8%AF%B4%E6%98%8E%E4%BB%80%E4%B9%88%E5%8E%9F%E5%9B%A0)
     - [301和302有什么区别](#301%E5%92%8C302%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB)
     - [504和500有什么区别](#504%E5%92%8C500%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB)
-- [架构](#%E6%9E%B6%E6%9E%84)
+    - [put和patch的差别](#put%E5%92%8Cpatch%E7%9A%84%E5%B7%AE%E5%88%AB)
+    - [描述下http2.0有哪些特性](#%E6%8F%8F%E8%BF%B0%E4%B8%8Bhttp20%E6%9C%89%E5%93%AA%E4%BA%9B%E7%89%B9%E6%80%A7)
+  - [网络安全](#%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8)
+    - [解决跨域的方式。重点是cors。](#%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E7%9A%84%E6%96%B9%E5%BC%8F%E9%87%8D%E7%82%B9%E6%98%AFcors)
+    - [理解csrf](#%E7%90%86%E8%A7%A3csrf)
+    - [理解xss](#%E7%90%86%E8%A7%A3xss)
+- [系统设计](#%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1)
   - [微服务](#%E5%BE%AE%E6%9C%8D%E5%8A%A1)
     - [微服务数据一致性问题，如何解决？](#%E5%BE%AE%E6%9C%8D%E5%8A%A1%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3)
   - [分布式](#%E5%88%86%E5%B8%83%E5%BC%8F)
@@ -78,12 +82,13 @@
 - [语言](#%E8%AF%AD%E8%A8%80)
   - [golang](#golang)
     - [如何实现CAS。](#%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0cas)
-    - [关于golang for-range 里 goroutine 闭包捕获的代码](#%E5%85%B3%E4%BA%8Egolang-for-range-%E9%87%8C-goroutine-%E9%97%AD%E5%8C%85%E6%8D%95%E8%8E%B7%E7%9A%84%E4%BB%A3%E7%A0%81)
+    - [关于golang for-range 的坑](#%E5%85%B3%E4%BA%8Egolang-for-range-%E7%9A%84%E5%9D%91)
     - [goroutine 是怎么调度的？](#goroutine-%E6%98%AF%E6%80%8E%E4%B9%88%E8%B0%83%E5%BA%A6%E7%9A%84)
     - [goroutine 和 kernel thread 之间是什么关系？](#goroutine-%E5%92%8C-kernel-thread-%E4%B9%8B%E9%97%B4%E6%98%AF%E4%BB%80%E4%B9%88%E5%85%B3%E7%B3%BB)
     - [golang 的 gc 算法](#golang-%E7%9A%84-gc-%E7%AE%97%E6%B3%95)
     - [Golang 里的逃逸分析是什么？怎么避免内存逃逸？](#golang-%E9%87%8C%E7%9A%84%E9%80%83%E9%80%B8%E5%88%86%E6%9E%90%E6%98%AF%E4%BB%80%E4%B9%88%E6%80%8E%E4%B9%88%E9%81%BF%E5%85%8D%E5%86%85%E5%AD%98%E9%80%83%E9%80%B8)
   - [node.js](#nodejs)
+    - [阻塞和非阻塞的区别和优缺点。同步和异步的区别和优缺点](#%E9%98%BB%E5%A1%9E%E5%92%8C%E9%9D%9E%E9%98%BB%E5%A1%9E%E7%9A%84%E5%8C%BA%E5%88%AB%E5%92%8C%E4%BC%98%E7%BC%BA%E7%82%B9%E5%90%8C%E6%AD%A5%E5%92%8C%E5%BC%82%E6%AD%A5%E7%9A%84%E5%8C%BA%E5%88%AB%E5%92%8C%E4%BC%98%E7%BC%BA%E7%82%B9)
 
 # Database
 ## Mysql
@@ -312,14 +317,32 @@ hyperloglog、bloomfilter
 [缓存](https://github.com/zhengweikeng/blog/blob/master/posts/2018/redis/%E4%BC%98%E5%8C%96.md)
 
 ### redis分布式锁
+简单来说，分布式锁就是在执行一个操作前，先加上锁，操作执行结束后再释放锁。当有其他请求也要操作它时，就得先抢锁，如果抢不到就只能等待或者放弃。
+
+实现上一般是：
+1. 先看是否已经加锁，如果加了，则放弃或者等待
+2. 如果没有加锁，则上锁。
+3. 为了避免异常（如机器宕机）导致锁没有得到释放，需要给锁加上超时时间，超时后释放锁
+4. 以上过程都需要是原子的
+```
+> set myKey abc1234 ex 5 nx
+```
 
 ### 简述Redis分布式锁的缺陷？
+如果加锁后，业务逻辑执行时间过长，导致超时，那么此时锁就会被释放。导致另一个线程就提前得到了锁。   
+因此一般来说，使用redis分布式不要用于长任务，否则出现这种错误可能需要人工接入。
+
+但是如果业务代码允许这种其他线程提前得到锁，为了避免前一个线程释放锁时，释放错了，可以在value上设置一个随机数。在释放锁的时候判断该随机是否一致，一致的情况下才删除
+```
+# delifequals
+if redis.call("get",KEYS[1]) == ARGV[1] then
+    return redis.call("del",KEYS[1])
+else
+    return 0
+end
+```
 
 ### 加锁机制，锁互斥机制，watch dog自动延期机制，可重入加锁机制，锁释放机制是什么？
-
-### Redis 的Setnx命令是如何实现分布式锁的？
-
-### 说说对Setnx 的实现锁的原理的理解？
 
 ### 如何避免死锁的出现？
 
@@ -348,7 +371,25 @@ Redis并不能保证数据的强一致性，这意味这在实际中集群在特
 ### Redis集群方案什么情况下会导致整个集群不可用？
 有A，B，C三个节点的集群,在没有复制模型的情况下,如果节点B失败了，那么整个集群就会以为缺少5501-11000这个范围的槽而不可用。
 
-### 怎么理解Redis事务？
+### Redis如何使用事务？有什么缺点？
+[Redis的事务功能详解](https://www.cnblogs.com/kyrin/p/5967620.html)
+
+### 为什么 Redis 的事务不能支持回滚？
+1. 首先redis执行失败，一般都是命令的使用方式错误，例如对一个字符串做了incr操作。而这些错误应该在开发阶段就应该能够发现，一般不会出现在生产环境。
+2. 首先redis和大部分数据库（如mysql）不一样，redis是先执行指令再写日志，只有指令执行成功了才会写日志。如果要支持回滚，那么事务过程中，成功的指令写了日志，失败的又没有写日志，那么就得标明哪些指令需要回滚，这样在日志传到备库时才能进行恢复。而这些都增加了redis事务执行的复杂性。
+3. 正因为在回滚上做了妥协，才提供了更好的性能。
+
+### 如何使用redis进行CAS修改缓存的值
+```
+WATCH myKey
+val = GET myKey
+val = val * 2
+
+MULTI
+SET myKey val
+EXEC
+```
+WATCH一个key后，如果有指令修改了key，不论是watch所在的客户端还是其他客户端，都会导致事务执行失败。
 
 ### Redis如何做内存优化，如何回收进程？
 redis基于对象引用计数来进行垃圾回收管理。
@@ -398,15 +439,21 @@ set k2 100
 
 # 网络
 ## 网络基础
-### http1.0和1.1的区别？
-
-### 描述下http2.0有哪些特性
-
 ### 一个请求的过程（或者说从浏览器地址栏回车后发生的所有过程）
 
 ### http请求包含哪些数据结构？
 
 ### 什么是http的长连接和短连接？如何配置使用长连接
+短连接：请求结束后，连接就断开  
+长连接：请求结束后，连接不断开，后续的请求复用这条连接。
+
+服务端可以配置 keep-alive 开启长连接。  
+例如nginx默认是开启keep-alive的，还可以配置长连接最多支持的请求数和超时时间。
+
+此时http的响应头中会有
+```
+Connection: keepalive;
+```
 
 ### TCP的keep-alive的作用？它和http的keep-alive有什么差别
 
@@ -432,7 +479,21 @@ set k2 100
 
 ### 504和500有什么区别
 
-# 架构
+### put和patch的差别
+[put 和 patch](https://github.com/zhengweikeng/blog/blob/master/posts/2018/interview/http.md)
+
+### 描述下http2.0有哪些特性
+
+## 网络安全
+### 解决跨域的方式。重点是cors。
+
+### 理解csrf
+
+### 理解xss
+
+# 系统设计
+[系统设计入门](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md)
+
 ## 微服务
 ### 微服务数据一致性问题，如何解决？
 
@@ -463,7 +524,55 @@ Compare and Swap，一种乐观锁的实现，简单来说就是不通过加锁�
 ## golang
 ### 如何实现CAS。
 
-### 关于golang for-range 里 goroutine 闭包捕获的代码
+### 关于golang for-range 的坑
+```go
+package main
+
+import "fmt"
+
+func main() {
+    slice := []int{0, 1, 2, 3}
+    myMap := make(map[int]*int)
+
+    for index, value := range slice {
+        myMap[index] = &value
+    }
+    fmt.Println("=====new map=====")
+    prtMap(myMap)
+}
+
+func prtMap(myMap map[int]*int) {
+    for key, value := range myMap {
+        fmt.Printf("map[%v]=%v\n", key, *value)
+    }
+}
+```
+此处会打印出：
+```
+=====new map=====
+map[3]=3
+map[0]=3
+map[1]=3
+map[2]=3
+```
+根本原因在于for-range会使用同一块内存去接收循环中的值。
+
+修改range循环为如下：
+```go
+for index, value := range slice {
+    num := value
+    myMap[index] = &num
+}
+```
+此时打印
+```
+=====new map=====
+map[2]=2
+map[3]=3
+map[0]=0
+map[1]=1
+```
+
 [go语言坑之for range](https://studygolang.com/articles/9701)
 
 ### goroutine 是怎么调度的？
@@ -475,3 +584,5 @@ Compare and Swap，一种乐观锁的实现，简单来说就是不通过加锁�
 ### Golang 里的逃逸分析是什么？怎么避免内存逃逸？
 
 ## node.js
+### 阻塞和非阻塞的区别和优缺点。同步和异步的区别和优缺点
+[对异步非阻塞的理解](https://www.cnblogs.com/-900401/p/4015048.html)
