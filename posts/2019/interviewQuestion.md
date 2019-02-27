@@ -35,6 +35,7 @@
     - [为什么 Redis 的事务不能支持回滚？](#%E4%B8%BA%E4%BB%80%E4%B9%88-redis-%E7%9A%84%E4%BA%8B%E5%8A%A1%E4%B8%8D%E8%83%BD%E6%94%AF%E6%8C%81%E5%9B%9E%E6%BB%9A)
     - [如何使用redis进行CAS修改缓存的值](#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8redis%E8%BF%9B%E8%A1%8Ccas%E4%BF%AE%E6%94%B9%E7%BC%93%E5%AD%98%E7%9A%84%E5%80%BC)
     - [Redis如何做内存优化，如何回收进程？](#redis%E5%A6%82%E4%BD%95%E5%81%9A%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96%E5%A6%82%E4%BD%95%E5%9B%9E%E6%94%B6%E8%BF%9B%E7%A8%8B)
+    - [Redis 常见的性能问题都有哪些？如何解决？](#redis-%E5%B8%B8%E8%A7%81%E7%9A%84%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98%E9%83%BD%E6%9C%89%E5%93%AA%E4%BA%9B%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3)
 - [数据结构和算法](#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E7%AE%97%E6%B3%95)
   - [数据结构](#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84)
     - [链表和数组的优缺点？](#%E9%93%BE%E8%A1%A8%E5%92%8C%E6%95%B0%E7%BB%84%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9)
@@ -92,6 +93,8 @@
 
 # Database
 ## Mysql
+[MySQL优化面试](https://juejin.im/post/5c6b9c09f265da2d8a55a855?utm_source=gold_browser_extension)
+
 ### MySQL 的存储引擎有哪些?（InnoDB）为什么选 InnoDB?
 Memory、MyISAM、InnoDB。  
 选择InnoDB:
@@ -318,6 +321,7 @@ hyperloglog、bloomfilter
 
 ### redis分布式锁
 简单来说，分布式锁就是在执行一个操作前，先加上锁，操作执行结束后再释放锁。当有其他请求也要操作它时，就得先抢锁，如果抢不到就只能等待或者放弃。
+[分布式锁之Redis实现](https://juejin.im/post/5c6e25aaf265da2dc538b4f9?utm_source=gold_browser_extension)
 
 实现上一般是：
 1. 先看是否已经加锁，如果加了，则放弃或者等待
@@ -419,6 +423,12 @@ set k2 100
 ```
 此时，redis只会创建一个redisObject对象，此时refcount=2，达到共享的作用。  
 ![WX20190226-174426@2x](./images/WX20190226-174426@2x.png)
+
+### Redis 常见的性能问题都有哪些？如何解决？
+1. Master写内存快照，save命令调度rdbSave函数，会阻塞主线程的工作，当快照比较大时对性能影响是非常大的，会间断性暂停服务，所以Master最好不要写内存快照。
+2. Master AOF持久化，如果不重写AOF文件，这个持久化方式对性能的影响是最小的，但是AOF文件会不断增大，AOF文件过大会影响Master重启的恢复速度。Master最好不要做任何持久化工作，包括内存快照和AOF日志文件，特别是不要启用内存快照做持久化,如果数据比较关键，某个Slave开启AOF备份数据，策略为每秒同步一次。
+3. Master调用BGREWRITEAOF重写AOF文件，AOF在重写的时候会占大量的CPU和内存资源，导致服务load过高，出现短暂服务暂停现象。
+4. Redis主从复制的性能问题，为了主从复制的速度和连接的稳定性，Slave和Master最好在同一个局域网内
 
 # 数据结构和算法
 ## 数据结构
