@@ -82,6 +82,8 @@
   - [并发](#%E5%B9%B6%E5%8F%91)
     - [CAS](#cas)
     - [COW](#cow)
+  - [设计](#%E8%AE%BE%E8%AE%A1)
+    - [如何设计一个短连接服务](#%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E4%B8%80%E4%B8%AA%E7%9F%AD%E8%BF%9E%E6%8E%A5%E6%9C%8D%E5%8A%A1)
 - [语言](#%E8%AF%AD%E8%A8%80)
   - [golang](#golang)
     - [如何实现CAS。](#%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0cas)
@@ -664,6 +666,10 @@ Compare and Swap，一种乐观锁的实现，简单来说就是不通过加锁�
 
 ### COW
 [聊聊并发-Java中的Copy-On-Write容器]([https://link](http://ifeve.com/java-copy-on-write/))
+
+## 设计
+### 如何设计一个短连接服务
+[长链接 转短链接URL的设计思路](https://blog.csdn.net/qq_33530388/article/details/78066538)
 
 # 语言
 ## golang
