@@ -20,9 +20,8 @@
     - [什么是缓存穿透？如何避免？什么是缓存雪崩？何如避免？](#%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E4%BD%95%E5%A6%82%E9%81%BF%E5%85%8D)
     - [redis分布式锁](#redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81)
     - [简述Redis分布式锁的缺陷？](#%E7%AE%80%E8%BF%B0redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E7%9A%84%E7%BC%BA%E9%99%B7)
-    - [加锁机制，锁互斥机制，watch dog自动延期机制，可重入加锁机制，锁释放机制是什么？](#%E5%8A%A0%E9%94%81%E6%9C%BA%E5%88%B6%E9%94%81%E4%BA%92%E6%96%A5%E6%9C%BA%E5%88%B6watch-dog%E8%87%AA%E5%8A%A8%E5%BB%B6%E6%9C%9F%E6%9C%BA%E5%88%B6%E5%8F%AF%E9%87%8D%E5%85%A5%E5%8A%A0%E9%94%81%E6%9C%BA%E5%88%B6%E9%94%81%E9%87%8A%E6%94%BE%E6%9C%BA%E5%88%B6%E6%98%AF%E4%BB%80%E4%B9%88)
-    - [如何避免死锁的出现？](#%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81%E7%9A%84%E5%87%BA%E7%8E%B0)
     - [Redis里面有1亿个key，其中有10w个key是以某个固定的已知的前缀开头的，如何将它们全部找出来？](#redis%E9%87%8C%E9%9D%A2%E6%9C%891%E4%BA%BF%E4%B8%AAkey%E5%85%B6%E4%B8%AD%E6%9C%8910w%E4%B8%AAkey%E6%98%AF%E4%BB%A5%E6%9F%90%E4%B8%AA%E5%9B%BA%E5%AE%9A%E7%9A%84%E5%B7%B2%E7%9F%A5%E7%9A%84%E5%89%8D%E7%BC%80%E5%BC%80%E5%A4%B4%E7%9A%84%E5%A6%82%E4%BD%95%E5%B0%86%E5%AE%83%E4%BB%AC%E5%85%A8%E9%83%A8%E6%89%BE%E5%87%BA%E6%9D%A5)
+    - [Redis 单线程如何处理那么多的并发客户端连接？](#redis-%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86%E9%82%A3%E4%B9%88%E5%A4%9A%E7%9A%84%E5%B9%B6%E5%8F%91%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%BF%9E%E6%8E%A5)
     - [如何使用redis实现队列。又如何实现延时队列。](#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8redis%E5%AE%9E%E7%8E%B0%E9%98%9F%E5%88%97%E5%8F%88%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E5%BB%B6%E6%97%B6%E9%98%9F%E5%88%97)
     - [如何实现持久化](#%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E6%8C%81%E4%B9%85%E5%8C%96)
     - [主从间的同步机制](#%E4%B8%BB%E4%BB%8E%E9%97%B4%E7%9A%84%E5%90%8C%E6%AD%A5%E6%9C%BA%E5%88%B6)
@@ -80,6 +79,7 @@
     - [不用zk的心跳, 可以怎么解决这个问题呢?](#%E4%B8%8D%E7%94%A8zk%E7%9A%84%E5%BF%83%E8%B7%B3-%E5%8F%AF%E4%BB%A5%E6%80%8E%E4%B9%88%E8%A7%A3%E5%86%B3%E8%BF%99%E4%B8%AA%E9%97%AE%E9%A2%98%E5%91%A2)
   - [并发](#%E5%B9%B6%E5%8F%91)
     - [CAS](#cas)
+    - [COW](#cow)
 - [语言](#%E8%AF%AD%E8%A8%80)
   - [golang](#golang)
     - [如何实现CAS。](#%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0cas)
@@ -333,6 +333,7 @@ hyperloglog、bloomfilter
 ```
 
 ### 简述Redis分布式锁的缺陷？
+**第一个缺陷：**  
 如果加锁后，业务逻辑执行时间过长，导致超时，那么此时锁就会被释放。导致另一个线程就提前得到了锁。   
 因此一般来说，使用redis分布式不要用于长任务，否则出现这种错误可能需要人工接入。
 
@@ -346,17 +347,58 @@ else
 end
 ```
 
-### 加锁机制，锁互斥机制，watch dog自动延期机制，可重入加锁机制，锁释放机制是什么？
+**第二个缺陷：**  
+在集群下，例如sentinel集群下是不安全的。  
+例如一个线程在主节点上申请了一把锁，但是突然主节点挂了，而且该锁也还没同步给从节点。此时从节点升级为主节点，之后另外一个线程也来请求锁，由于此时主节点没有锁，所以能够加锁成功。
 
-### 如何避免死锁的出现？
+于是便有了redlock来解决这种情况。  
+在使用redlock时，需要提供多个redis实例，这些实例都是主节点（一般不会有从节点）且相互独立。加锁的时候，会向这些实例发送set(key, value, nx=true, ex)的指令，只要过半的节点set成功，则认为加锁成功。释放锁时，需要向所有节点发送del指令。
+
+例如js的[redlock库](https://github.com/mike-marcacci/node-redlock)  
+```javascript
+var client1 = require('redis').createClient(6379, 'redis1.example.com');
+var client2 = require('redis').createClient(6379, 'redis2.example.com');
+var client3 = require('redis').createClient(6379, 'redis3.example.com');
+var Redlock = require('redlock');
+
+var redlock = new Redlock(
+	// you should have one client for each independent redis node
+	// or cluster
+	[client1, client2, client3],
+	{
+		// the expected clock drift; for more details
+		// see http://redis.io/topics/distlock
+		driftFactor: 0.01, // time in ms
+
+		// the max number of times Redlock will attempt
+		// to lock a resource before erroring
+		retryCount:  10,
+
+		// the time in ms between attempts
+		retryDelay:  200, // time in ms
+
+		// the max time in ms randomly added to retries
+		// to improve performance under high contention
+		// see https://www.awsarchitectureblog.com/2015/03/backoff.html
+		retryJitter:  200 // time in ms
+	}
+);
+```
 
 ### Redis里面有1亿个key，其中有10w个key是以某个固定的已知的前缀开头的，如何将它们全部找出来？
 keys和scan
+
+### Redis 单线程如何处理那么多的并发客户端连接？
+虽然redis是单线程，但是它基于异步非阻塞IO，让线程在进行IO操作的时候，不会被阻塞。其他请求都可以进行多路复用，复用同一个线程来处理任务。
 
 ### 如何使用redis实现队列。又如何实现延时队列。
 [队列和延时队列](https://juejin.im/book/5afc2e5f6fb9a07a9b362527/section/5afc3643518825672034404b)
 
 ### 如何实现持久化
+1. RDB快照，会不断记录某一瞬间的数据，是一种全量备份
+2. AOF日志，是一种增量备份。
+
+[redis持久化](https://github.com/zhengweikeng/blog/blob/master/posts/2018/redis/%E6%8C%81%E4%B9%85%E5%8C%96.md)
 
 ### 主从间的同步机制
 
@@ -530,6 +572,8 @@ TDDL 那样一次取一个 ID 段，放在本地慢慢分配的策略
 ### CAS
 Compare and Swap，一种乐观锁的实现，简单来说就是不通过加锁的方式来解决并发情况下对共享变量的访问和修改。
 
+### COW
+
 # 语言
 ## golang
 ### 如何实现CAS。
@@ -595,4 +639,5 @@ map[1]=1
 
 ## node.js
 ### 阻塞和非阻塞的区别和优缺点。同步和异步的区别和优缺点
-[对异步非阻塞的理解](https://www.cnblogs.com/-900401/p/4015048.html)
+[对异步非阻塞的理解](https://www.cnblogs.com/-900401/p/4015048.html)  
+[深入了解几种IO模型（阻塞非阻塞，同步异步）](https://blog.csdn.net/zk3326312/article/details/79400805)
