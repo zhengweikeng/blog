@@ -88,6 +88,7 @@
     - [这个限流要做成分布式的, 怎么做?](#%E8%BF%99%E4%B8%AA%E9%99%90%E6%B5%81%E8%A6%81%E5%81%9A%E6%88%90%E5%88%86%E5%B8%83%E5%BC%8F%E7%9A%84-%E6%80%8E%E4%B9%88%E5%81%9A)
     - [分布式锁设置超时后，有没可能在没有释放的情况下, 被人抢走锁。有的话，怎么解决？](#%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E8%AE%BE%E7%BD%AE%E8%B6%85%E6%97%B6%E5%90%8E%E6%9C%89%E6%B2%A1%E5%8F%AF%E8%83%BD%E5%9C%A8%E6%B2%A1%E6%9C%89%E9%87%8A%E6%94%BE%E7%9A%84%E6%83%85%E5%86%B5%E4%B8%8B-%E8%A2%AB%E4%BA%BA%E6%8A%A2%E8%B5%B0%E9%94%81%E6%9C%89%E7%9A%84%E8%AF%9D%E6%80%8E%E4%B9%88%E8%A7%A3%E5%86%B3)
     - [不用zk的心跳, 可以怎么解决这个问题呢?](#%E4%B8%8D%E7%94%A8zk%E7%9A%84%E5%BF%83%E8%B7%B3-%E5%8F%AF%E4%BB%A5%E6%80%8E%E4%B9%88%E8%A7%A3%E5%86%B3%E8%BF%99%E4%B8%AA%E9%97%AE%E9%A2%98%E5%91%A2)
+    - [如何保障分布式事务的一致性？](#%E5%A6%82%E4%BD%95%E4%BF%9D%E9%9A%9C%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E7%9A%84%E4%B8%80%E8%87%B4%E6%80%A7)
   - [并发编程](#%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B)
     - [CAS](#cas)
     - [COW](#cow)
@@ -103,7 +104,8 @@
     - [Golang 里的逃逸分析是什么？怎么避免内存逃逸？](#golang-%E9%87%8C%E7%9A%84%E9%80%83%E9%80%B8%E5%88%86%E6%9E%90%E6%98%AF%E4%BB%80%E4%B9%88%E6%80%8E%E4%B9%88%E9%81%BF%E5%85%8D%E5%86%85%E5%AD%98%E9%80%83%E9%80%B8)
   - [node.js](#nodejs)
     - [阻塞和非阻塞的区别和优缺点。同步和异步的区别和优缺点](#%E9%98%BB%E5%A1%9E%E5%92%8C%E9%9D%9E%E9%98%BB%E5%A1%9E%E7%9A%84%E5%8C%BA%E5%88%AB%E5%92%8C%E4%BC%98%E7%BC%BA%E7%82%B9%E5%90%8C%E6%AD%A5%E5%92%8C%E5%BC%82%E6%AD%A5%E7%9A%84%E5%8C%BA%E5%88%AB%E5%92%8C%E4%BC%98%E7%BC%BA%E7%82%B9)
-    - [异步IO模型](#%E5%BC%82%E6%AD%A5io%E6%A8%A1%E5%9E%8B)
+    - [异步IO模型和事件循环机制](#%E5%BC%82%E6%AD%A5io%E6%A8%A1%E5%9E%8B%E5%92%8C%E4%BA%8B%E4%BB%B6%E5%BE%AA%E7%8E%AF%E6%9C%BA%E5%88%B6)
+    - [为什么要有microtask和macrotask?](#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E6%9C%89microtask%E5%92%8Cmacrotask)
 
 # Database
 ## Mysql
@@ -769,6 +771,11 @@ TDDL 那样一次取一个 ID 段，放在本地慢慢分配的策略
 ### 不用zk的心跳, 可以怎么解决这个问题呢?
 每次更新过期时间时，Redis用MULTI做check-and-set检查更新时间是否被其他线程修改了，假如被修改了，说明锁已经被抢走，放弃这把锁。
 
+### 如何保障分布式事务的一致性？
+[分布式系统的事务处理](https://coolshell.cn/articles/10910.html)  
+[对分布式事务及两阶段提交、三阶段提交的理解](https://www.cnblogs.com/AndyAo/p/8228099.html)
+
+
 ## 并发编程
 ### CAS
 Compare and Swap，一种乐观锁的实现，简单来说就是不通过加锁的方式来解决并发情况下对共享变量的访问和修改。
@@ -874,8 +881,16 @@ runtime.GOMAXPROCS(cpuNum)
 ### Golang 里的逃逸分析是什么？怎么避免内存逃逸？
 
 ## node.js
+[node-interview-questions](https://github.com/jimuyouyou/node-interview-questions)   
+[如何通过饿了么Node.js面试](https://elemefe.github.io/node-interview/#/sections/zh-cn/)
+
 ### 阻塞和非阻塞的区别和优缺点。同步和异步的区别和优缺点
 [对异步非阻塞的理解](https://www.cnblogs.com/-900401/p/4015048.html)  
 [深入了解几种IO模型（阻塞非阻塞，同步异步）](https://blog.csdn.net/zk3326312/article/details/79400805)
 
-### 异步IO模型
+### 异步IO模型和事件循环机制
+[node异步IO](https://github.com/zhengweikeng/blog/blob/master/posts/2018/js/4.异步.md)
+
+### 为什么要有microtask和macrotask?
+可能还是跟js一开始是浏览器搭载的语言有关。  
+根据HTML Standard，在每个task运行完以后，UI都会重渲染，那么在 microtask中就完成数据更新，当前task结束就可以得到最新的UI了。反之如果新建一个task来做数据更新，那么渲染就会进行两次。
