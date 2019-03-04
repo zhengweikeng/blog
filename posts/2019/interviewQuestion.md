@@ -106,6 +106,9 @@
     - [阻塞和非阻塞的区别和优缺点。同步和异步的区别和优缺点](#%E9%98%BB%E5%A1%9E%E5%92%8C%E9%9D%9E%E9%98%BB%E5%A1%9E%E7%9A%84%E5%8C%BA%E5%88%AB%E5%92%8C%E4%BC%98%E7%BC%BA%E7%82%B9%E5%90%8C%E6%AD%A5%E5%92%8C%E5%BC%82%E6%AD%A5%E7%9A%84%E5%8C%BA%E5%88%AB%E5%92%8C%E4%BC%98%E7%BC%BA%E7%82%B9)
     - [异步IO模型和事件循环机制](#%E5%BC%82%E6%AD%A5io%E6%A8%A1%E5%9E%8B%E5%92%8C%E4%BA%8B%E4%BB%B6%E5%BE%AA%E7%8E%AF%E6%9C%BA%E5%88%B6)
     - [为什么要有microtask和macrotask?](#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E6%9C%89microtask%E5%92%8Cmacrotask)
+    - [如何实现一个异步的reduce?](#%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%BC%82%E6%AD%A5%E7%9A%84reduce)
+    - [V8内存控制和垃圾回收机制](#v8%E5%86%85%E5%AD%98%E6%8E%A7%E5%88%B6%E5%92%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E6%9C%BA%E5%88%B6)
+    - [内存泄漏](#%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F)
 
 # Database
 ## Mysql
@@ -894,3 +897,41 @@ runtime.GOMAXPROCS(cpuNum)
 ### 为什么要有microtask和macrotask?
 可能还是跟js一开始是浏览器搭载的语言有关。  
 根据HTML Standard，在每个task运行完以后，UI都会重渲染，那么在 microtask中就完成数据更新，当前task结束就可以得到最新的UI了。反之如果新建一个task来做数据更新，那么渲染就会进行两次。
+
+### 如何实现一个异步的reduce?
+```javascript
+async function asyncReduce(items=[], cb, result) {
+  let i = 0;
+  
+  async function next(res, index) {
+    res = await cb(res, items[index])
+    if (index === items.length - 1) {
+      return res
+    }
+    return await next(res, ++index)
+  }
+  
+  return await next(result, i)
+}
+
+const items = [1,2,3,4,5]
+
+asyncReduce(items, async (pre, item) => {
+  await new Promise((r) => {
+    setTimeout(() => {
+      pre.push(item)
+      r()
+    }, 1000);  
+  })
+  return pre
+}, [])
+.then((result) => console.log(result))
+```
+
+### V8内存控制和垃圾回收机制
+[V8 内存浅析](https://zhuanlan.zhihu.com/p/33816534)  
+[V8 内存管理和垃圾回收机制总结](https://www.jianshu.com/p/455d0b9ef0a8)  
+[node内存控制](https://www.jianshu.com/p/71a999baafbb)  
+
+### 内存泄漏
+[如何分析 Node.js 中的内存泄漏](https://zhuanlan.zhihu.com/p/25736931)
