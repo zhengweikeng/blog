@@ -1,3 +1,2 @@
-let arr = [];
-while(true)
-  arr.push(1);
+require('./b')
+console.log('a');

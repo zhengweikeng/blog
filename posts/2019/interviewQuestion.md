@@ -109,6 +109,12 @@
     - [如何实现一个异步的reduce?](#%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%BC%82%E6%AD%A5%E7%9A%84reduce)
     - [V8内存控制和垃圾回收机制](#v8%E5%86%85%E5%AD%98%E6%8E%A7%E5%88%B6%E5%92%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E6%9C%BA%E5%88%B6)
     - [内存泄漏](#%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F)
+    - [javascript原型链和如何实现继承](#javascript%E5%8E%9F%E5%9E%8B%E9%93%BE%E5%92%8C%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E7%BB%A7%E6%89%BF)
+- [项目](#%E9%A1%B9%E7%9B%AE)
+  - [为什么用rabbitmq，它有什么优缺点](#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8rabbitmq%E5%AE%83%E6%9C%89%E4%BB%80%E4%B9%88%E4%BC%98%E7%BC%BA%E7%82%B9)
+  - [为什么用mqtt，它有什么优缺点](#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8mqtt%E5%AE%83%E6%9C%89%E4%BB%80%E4%B9%88%E4%BC%98%E7%BC%BA%E7%82%B9)
+  - [用redis解决什么问题](#%E7%94%A8redis%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98)
+  - [抽奖功能是怎么实现的](#%E6%8A%BD%E5%A5%96%E5%8A%9F%E8%83%BD%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84)
 
 # Database
 ## Mysql
@@ -778,7 +784,6 @@ TDDL 那样一次取一个 ID 段，放在本地慢慢分配的策略
 [分布式系统的事务处理](https://coolshell.cn/articles/10910.html)  
 [对分布式事务及两阶段提交、三阶段提交的理解](https://www.cnblogs.com/AndyAo/p/8228099.html)
 
-
 ## 并发编程
 ### CAS
 Compare and Swap，一种乐观锁的实现，简单来说就是不通过加锁的方式来解决并发情况下对共享变量的访问和修改。
@@ -935,3 +940,15 @@ asyncReduce(items, async (pre, item) => {
 
 ### 内存泄漏
 [如何分析 Node.js 中的内存泄漏](https://zhuanlan.zhihu.com/p/25736931)
+
+### javascript原型链和如何实现继承
+[原型链和继承](https://github.com/zhengweikeng/blog/blob/master/posts/2018/js/6.%E5%8E%9F%E5%9E%8B.md)
+
+# 项目
+## 为什么用rabbitmq，它有什么优缺点
+
+## 为什么用mqtt，它有什么优缺点
+
+## 用redis解决什么问题
+
+## 抽奖功能是怎么实现的
