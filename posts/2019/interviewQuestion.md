@@ -199,7 +199,7 @@ Memory、MyISAM、InnoDB。
 * 第4步中，如果有字段不存在，表不存在也会在这个阶段报错。
 
 ### 主从复制的流程
-1. 主库和从库间会建立一条长连接
+1. 主库和从库间会建立一条长连接，主库会有一条新的线程dump_thread，用于将binlog发给从库。
 2. 从库会开启两个线程
    1. IO thead，用于接收主库发送过来的binlog
    2. SQL thread，用于执行binlog中的sql
@@ -207,6 +207,38 @@ Memory、MyISAM、InnoDB。
 4. 从库的IO thread收到binlog后传给SQL thread，尤其执行sql，完成复制。
 
 ### 如何保证数据库的主从一致性
+主从复制之间是通过bin log来保障的，因此主从的一致性就受这个文件影响。日志文件的传输效率和文件的内容格式都会影响主从一致性。
+
+binlog的格式有两种，statement和row格式。
+1. statement格式，记录的是sql的原始语句。如：update t set a=2 where id=1。这个格式占用的日志空间小。
+    ![b9818f73cd7d38a96ddcb75350b52931](./images/b9818f73cd7d38a96ddcb75350b52931.png)
+2. row格式，记录的是操作的行为和记录的主键，还会记录完整的行信息。这种格式占用的日志空间大，日志需要记录操作的每一行的id。
+    ![c342cf480d23b05d30a294b114cebfc2.png](./images/c342cf480d23b05d30a294b114cebfc2.png)
+
+如果采用了statement格式的binlog就有可能造成主从不一致。   
+例如以下sql：
+```sql
+mysql> CREATE TABLE `t` (
+  `id` int(11) NOT NULL,
+  `a` int(11) DEFAULT NULL,
+  `t_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `a` (`a`),
+  KEY `t_modified`(`t_modified`)
+) ENGINE=InnoDB;
+
+mysql> insert into t values(1,1,'2018-11-13');
+mysql> insert into t values(2,2,'2018-11-12');
+mysql> insert into t values(3,3,'2018-11-11');
+mysql> insert into t values(4,4,'2018-11-10');
+mysql> insert into t values(5,5,'2018-11-09');
+
+mysql> delete from t where a>=4 and t_modified<='2018-11-10' limit 1;
+```
+这时主库删除数据的时候，如果使用使用了索引a，就会让a=4的语句被删掉，并在binlog记录这条sql语句。   
+但是binlog到了从库后，如果从库执行的时候选择了索引t_modified，就会导致a=5的语句被删除掉，导致主从不一致。  
+因此最好的配置应该是设置成`mixd`格式，由MySQL自己判断什么时候使用应该使用的格式。  
+例如使用mixed后，上面的sql就会以row格式记录。
 
 ### 分库分表后怎么保证主键仍然是递增的?
 * 借用第三方应用如memcache、redis的id自增器
