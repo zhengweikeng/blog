@@ -97,7 +97,7 @@
     - [CAS](#cas)
     - [COW](#cow)
   - [设计](#%E8%AE%BE%E8%AE%A1)
-    - [如何设计一个短连接服务](#%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E4%B8%80%E4%B8%AA%E7%9F%AD%E8%BF%9E%E6%8E%A5%E6%9C%8D%E5%8A%A1)
+    - [如何设计一个短链接服务](#%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E4%B8%80%E4%B8%AA%E7%9F%AD%E9%93%BE%E6%8E%A5%E6%9C%8D%E5%8A%A1)
     - [当缓存需要更新的时候，你觉得应该怎么做才合理？](#%E5%BD%93%E7%BC%93%E5%AD%98%E9%9C%80%E8%A6%81%E6%9B%B4%E6%96%B0%E7%9A%84%E6%97%B6%E5%80%99%E4%BD%A0%E8%A7%89%E5%BE%97%E5%BA%94%E8%AF%A5%E6%80%8E%E4%B9%88%E5%81%9A%E6%89%8D%E5%90%88%E7%90%86)
 - [语言](#%E8%AF%AD%E8%A8%80)
   - [golang](#golang)
@@ -904,7 +904,7 @@ Compare and Swap，一种乐观锁的实现，简单来说就是不通过加锁�
 [聊聊并发-Java中的Copy-On-Write容器]([https://link](http://ifeve.com/java-copy-on-write/))
 
 ## 设计
-### 如何设计一个短连接服务
+### 如何设计一个短链接服务
 [长链接 转短链接URL的设计思路](https://blog.csdn.net/qq_33530388/article/details/78066538)
 
 ### 当缓存需要更新的时候，你觉得应该怎么做才合理？
