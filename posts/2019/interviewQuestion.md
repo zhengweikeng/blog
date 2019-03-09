@@ -75,9 +75,9 @@
     - [put和patch的差别](#put%E5%92%8Cpatch%E7%9A%84%E5%B7%AE%E5%88%AB)
     - [缓存头有哪些，如何使用？](#%E7%BC%93%E5%AD%98%E5%A4%B4%E6%9C%89%E5%93%AA%E4%BA%9B%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8)
   - [网络安全](#%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8)
-    - [解决跨域的方式。重点是cors。](#%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E7%9A%84%E6%96%B9%E5%BC%8F%E9%87%8D%E7%82%B9%E6%98%AFcors)
-    - [理解csrf](#%E7%90%86%E8%A7%A3csrf)
+    - [解决跨域的方式](#%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E7%9A%84%E6%96%B9%E5%BC%8F)
     - [理解xss](#%E7%90%86%E8%A7%A3xss)
+    - [理解csrf](#%E7%90%86%E8%A7%A3csrf)
     - [SYN Flood攻击](#syn-flood%E6%94%BB%E5%87%BB)
   - [网络通信](#%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1)
     - [用过哪些RPC框架么，讲讲有缺点](#%E7%94%A8%E8%BF%87%E5%93%AA%E4%BA%9Brpc%E6%A1%86%E6%9E%B6%E4%B9%88%E8%AE%B2%E8%AE%B2%E6%9C%89%E7%BC%BA%E7%82%B9)
@@ -839,13 +839,26 @@ net.ipv4.tcp_fin_timeout = 60   // 保持在fin_wait_2状态的时间
 [浏览器缓存浅析](https://github.com/zhengweikeng/blog/blob/master/posts/2015/%E6%B5%8F%E8%A7%88%E5%99%A8%E7%BC%93%E5%AD%98%E6%B5%85%E6%9E%90.md)
 
 ## 网络安全
-### 解决跨域的方式。重点是cors。
-
-### 理解csrf
+### 解决跨域的方式
+[跨域的解决方式](https://github.com/zhengweikeng/blog/blob/master/posts/2018/%E5%AE%89%E5%85%A8/cors.md)
 
 ### 理解xss
+[xss](https://github.com/zhengweikeng/blog/blob/master/posts/2018/%E5%AE%89%E5%85%A8/xss.md)
+
+### 理解csrf
+[csrf](https://github.com/zhengweikeng/blog/blob/master/posts/2018/%E5%AE%89%E5%85%A8/csrf.md)
 
 ### SYN Flood攻击
+```
+# 接收自网卡、但未被内核协议栈处理的报文队列长度
+net.core.netdev_max_backlog
+
+# syn_rcvd状态数的最大个数
+net.ipv4.tcp_max_syn_backlog
+
+# 超出处理能力时，对新来的SYN包直接回复RST，丢弃连接
+net.ipv4.tcp_abort_on_overflow
+```
 
 ## 网络通信
 ### 用过哪些RPC框架么，讲讲有缺点
