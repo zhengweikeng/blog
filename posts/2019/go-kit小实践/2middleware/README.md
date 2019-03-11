@@ -1,5 +1,5 @@
 # 添加中间件
-## 为请求添加前后的日志记录
+## transport级别日志中间件
 创建文件`$workspace/endpoint/middlewareEndpoint.go`
 ```go
 package endpoint
@@ -25,6 +25,36 @@ func LoggingMiddleware() Middleware  {
 }
 ```
 
+## 应用级别日志中间件
+创建文件`$workspace/service/middlewareService.go`
+```go
+package service
+
+import "fmt"
+
+type LoggingMiddleware struct {
+	Next IdGeneratorService
+}
+
+func (l *LoggingMiddleware) GetId(serverId string) (int, error) {
+	defer func() {
+		fmt.Printf("GetId, serverId: %s\n", serverId)
+	}()
+
+	return l.Next.GetId(serverId)
+}
+
+func (l *LoggingMiddleware) CreateId(serverId string) (int, error) {
+	defer func() {
+		fmt.Printf("CreateId, serverId: %s\n", serverId)
+	}()
+
+	return l.Next.CreateId(serverId)
+}
+```
+简单来说，这种级别的中间件是加在service上的
+
+## 修改transport
 修改`$workspace/transport/http/idGenerator.go`
 ```go
 func MakeIdGeneratorHandler(_ context.Context) http.Handler {
