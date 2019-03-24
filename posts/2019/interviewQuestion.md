@@ -501,7 +501,8 @@ hyperloglog、bloomfilter
 [key过期处理](https://github.com/zhengweikeng/blog/blob/master/posts/2018/redis/%E8%BF%87%E6%9C%9Fkey.md)
 
 ### 什么是缓存穿透？如何避免？什么是缓存雪崩？何如避免？
-[缓存](https://github.com/zhengweikeng/blog/blob/master/posts/2018/redis/%E4%BC%98%E5%8C%96.md)
+[缓存](https://github.com/zhengweikeng/blog/blob/master/posts/2018/redis/%E4%BC%98%E5%8C%96.md)   
+[缓存雪崩、缓存穿透和缓存更新](https://zhuanlan.zhihu.com/p/59945689)
 
 ### redis分布式锁
 简单来说，分布式锁就是在执行一个操作前，先加上锁，操作执行结束后再释放锁。当有其他请求也要操作它时，就得先抢锁，如果抢不到就只能等待或者放弃。
