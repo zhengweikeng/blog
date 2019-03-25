@@ -1,6 +1,7 @@
 # leetcode
 * [21 两数之和](./1/two-sum.go)
 * [21 合并两个有序链表](./21/merge-two-sorted-lists.go)
+* [88 合并两个有序数组](./88/merge-sorted-array.go)
 * [141 环形链表](./141/linked-list-cycle.go)
 * [206 反转链表](./206/reverse-linked-list.go)
 * [217 存在重复元素](./217/contains-duplicate.go)
