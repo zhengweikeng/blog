@@ -3,6 +3,11 @@
 
 package main
 
+type linkList struct {
+	value int
+	next  *linkList
+}
+
 // 在首个节点插入哨兵节点作为头结点，就地反转
 func reverseList(link *linkList) *linkList {
 	if link == nil {
@@ -46,4 +51,8 @@ func reverseListNotInPlace(link *linkList) *linkList {
 	}
 
 	return head.next
+}
+
+func main() {
+
 }

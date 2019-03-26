@@ -14,7 +14,6 @@ func twoSum(nums []int, target int) (res [2]int) {
 		t := target - num
 		val, ok := numMap[num]
 		if ok == true {
-			fmt.Println(len(res))
 			res[0] = val
 			res[1] = i
 		} else {

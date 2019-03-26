@@ -1,5 +1,6 @@
 # leetcode
-* [21 两数之和](./1/two-sum.go)
+* [1 两数之和](./1/two-sum.go)
+* [15 三数之和](./15/three-sum.go)
 * [21 合并两个有序链表](./21/merge-two-sorted-lists.go)
 * [88 合并两个有序数组](./88/merge-sorted-array.go)
 * [141 环形链表](./141/linked-list-cycle.go)
