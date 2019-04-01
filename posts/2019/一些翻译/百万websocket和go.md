@@ -283,3 +283,115 @@ func (ch *Channel) Send(p Packet) {
 ```
 
 不使用`go ch.writer()`，我们想要写一个可重用的giroutin。因此，对于N个goroutine池，我们可以保证对于N个同时处理和到达的N+1个请求，我们不会分配N+1个缓冲区进行读取。goroutine池还允许我们限制新的连接的`Accept()`和`Upgrade()`，也能避免被大量的DDoS攻击打垮。
+
+## 3.4 零拷贝upgrade
+让我们稍微偏离下WebSocket协议。之前我们已经提到，客户端是通过Http升级请求从而切换为WebSocket协议的。就像下面所示：
+
+```
+GET /ws HTTP/1.1
+Host: mail.ru
+Connection: Upgrade
+Sec-Websocket-Key: A3xNe7sEB9HixkmBhVrYaA==
+Sec-Websocket-Version: 13
+Upgrade: websocket
+
+HTTP/1.1 101 Switching Protocols
+Connection: Upgrade
+Sec-Websocket-Accept: ksu0wXWG+YmkVx+KQR2agP0cQn4=
+Upgrade: websocket
+```
+
+这也就是说，在我们的例子里，我们需要Http请求和它的头部的原因就只是为了切换为WebSocket协议。通过这个认识，还有存储在`http.request`中的信息，暗示了如果想要做优化，我们可能可以在处理Http请求的时候抛弃非必须的内存分配和拷贝，并放弃使用标准的`net/http`服务器。
+
+> 举个例子，`http.request`包含一个具有相同名称的请求头类型，它通过从连接中拷贝数据以此来无条件的填充所有请求头。想象一下这个字段可以存储多少数据，超大的的cookie头部就是一个例子。
+
+但是要来做什么呢？
+
+# WebSocket实现
+很不幸，几乎所有的能够优化我们的服务器的库都只能通过标准的`net/http`服务器来进行upgrade。此外，没有一个库能够做到上面所说的读和写的优化。为了是这些优化能够正常工作，我们必须使用一个相当低级别的API来处理WebSocket。为了能够重用缓冲区，我们需要有下面所示的协议函数：
+
+```go
+func ReadFrame(io.Reader) (Frame, error)
+func WriteFrame(io.Writer, Frame) error
+```
+
+如果我们有一个这样的API的库，我们可以从连接中读取数据包，如下所示（数据包的写入做法也是一样的）：
+
+```go
+// getReadBuf和putReadBuf用于重用*bufio.Reader(例如配合sync.Pool)
+func getReadBuf(io.Reader) *bufio.Reader
+func putReadBuf(*bufio.Reader)
+
+// readPacket 当数据能够从连接被读取时必须调用该函数
+func readPacket(conn io.Reader) error {
+    buf := getReadBuf(conn)
+    defer putReadBuf(buf)
+
+    buf.Reset(conn)
+    frame, _ := ReadFome(conn)
+    parsePacket(frame.Payload)
+}
+```
+
+简而言之，现在是制作我们自己库的时候了。
+
+# github.com/gobwas/ws
+为了避免将协议操作逻辑强加给用户，于是我们写了个`ws`库。所有读写方法都符合标准的io.Reader和io.Writer接口，可以使用或不使用缓冲或任何其他I/O包装器。
+
+除了来自标准net/http升级请求之外，ws支持零拷贝升级，升级请求的处理和切换到WebSocket都不需要分配内存空间和拷贝。`ws.Upgrade()`接收一个`io.ReadWriter`（net.Conn实现了这个接口）。换句话说，我们可以使用标准的`net.Listen`，然后将接收到的连接从`ln.Accept`立即转移到`ws.Upgrade`。该库可以复制任何请求数据以供将来在应用程序中使用（例如， Cookie以验证会话）。
+
+以下是升级请求处理的基准数据：标准net/http服务器与net.Listen()加零拷贝升级：
+
+```
+BenchmarkUpgradeHTTP    5156 ns/op    8576 B/op    9 allocs/op
+BenchmarkUpgradeTCP     973 ns/op     0 B/op       0 allocs/op
+```
+
+切换到`ws`和使用零拷贝为我们节省了另外的24GB，这是由`net/http`处理程序请求处理时为I/O缓冲区分配的空间。
+
+# 小结
+让我们来讲讲我们所做的优化。
+* 一个缓冲区的读goroutine是非常昂贵的。解决方式：netpoll（epoll，kqueue）；重用buffer。
+* 一个缓冲区的写goroutine是非常昂贵的。解决方式：只要需要的时候开启goroutine。重用buffer。
+* 大量攻击的连接，netpoll将不起作用。解决方式：重新使用数量限制的goroutines。
+* `net/http`不是升级为WebSocket的最快方式。解决方式：采用零拷贝，在连接上使用零拷贝升级。
+
+```go
+import (
+    "net"
+    "github.com/gobwas/ws"
+)
+
+ln, _ := net.Listen("tcp", ":8080")
+
+for {
+    // Try to accept incoming connection inside free pool worker.
+    // If there no free workers for 1ms, do not accept anything and try later.
+    // This will help us to prevent many self-ddos or out of resource limit cases.
+    err := pool.ScheduleTimeout(time.Millisecond, func() {
+        conn := ln.Accept()
+        _ = ws.Upgrade(conn)
+
+        // Wrap WebSocket connection with our Channel struct.
+        // This will help us to handle/send our app's packets.
+        ch := NewChannel(conn)
+
+        // Wait for incoming bytes from connection.
+        poller.Start(conn, netpoll.EventRead, func() {
+            // Do not cross the resource limits.
+            pool.Schedule(func() {
+                // Read and handle incoming packet(s).
+                ch.Recevie()
+            })
+        })
+    })
+    if err != nil {   
+        time.Sleep(time.Millisecond)
+    }
+}
+```
+
+# 结论
+> 过早优化是万恶之源。 Donald Knuth。
+
+当然，上述优化是有意义的但并非所有情况都如此。例如，如果可用资源（内存，CPU）和在线连接数之间的比例相当高（服务器很闲），则优化可能没有任何意义。但是，您可以从哪里需要改进以及改进内容中受益匪浅。
