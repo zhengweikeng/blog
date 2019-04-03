@@ -120,7 +120,7 @@
     - [javascript原型链和如何实现继承](#javascript%E5%8E%9F%E5%9E%8B%E9%93%BE%E5%92%8C%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E7%BB%A7%E6%89%BF)
 - [其他](#%E5%85%B6%E4%BB%96)
   - [为什么用rabbitmq，它有什么优缺点](#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8rabbitmq%E5%AE%83%E6%9C%89%E4%BB%80%E4%B9%88%E4%BC%98%E7%BC%BA%E7%82%B9)
-  - [为什么用mqtt，它有什么优缺点](#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8mqtt%E5%AE%83%E6%9C%89%E4%BB%80%E4%B9%88%E4%BC%98%E7%BC%BA%E7%82%B9)
+  - [如何保证MQ消息的可靠性传输，避免消息丢失](#%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81mq%E6%B6%88%E6%81%AF%E7%9A%84%E5%8F%AF%E9%9D%A0%E6%80%A7%E4%BC%A0%E8%BE%93%E9%81%BF%E5%85%8D%E6%B6%88%E6%81%AF%E4%B8%A2%E5%A4%B1)
   - [用redis解决什么问题](#%E7%94%A8redis%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98)
   - [抽奖功能是怎么实现的](#%E6%8A%BD%E5%A5%96%E5%8A%9F%E8%83%BD%E6%98%AF%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0%E7%9A%84)
   - [参考资料](#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99)
@@ -925,7 +925,8 @@ net.ipv4.tcp_abort_on_overflow
 2. 要么牺牲一致性，维持可用性，这种方式可以实现最终一致性。
 
 ### 分布式系统的唯一id生成算法
-[分布式系统的唯一id生成算法你了解吗？](https://juejin.im/post/5c6be4086fb9a04a060570df)
+[分布式系统的唯一id生成算法你了解吗？](https://juejin.im/post/5c6be4086fb9a04a060570df)   
+[数据库全局id](https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/database-shard-global-id-generate.md)
 
 ### 某一个业务中现在需要生成全局唯一的递增 ID, 并发量非常大, 怎么做
 [分布式架构生成全局唯一有序ID方案](https://www.jianshu.com/p/7eb0825f67ca)  
@@ -1109,8 +1110,10 @@ asyncReduce(items, async (pre, item) => {
 
 # 其他
 ## 为什么用rabbitmq，它有什么优缺点
+[为什么使用mq](https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/why-mq.md)
 
-## 为什么用mqtt，它有什么优缺点
+## 如何保证MQ消息的可靠性传输，避免消息丢失
+[mq消息可靠性传输](https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/how-to-ensure-the-reliable-transmission-of-messages.md)
 
 ## 用redis解决什么问题
 
