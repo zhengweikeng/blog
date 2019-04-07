@@ -953,7 +953,7 @@ net.ipv4.tcp_abort_on_overflow
 Compare and Swap，一种乐观锁的实现，简单来说就是不通过加锁的方式来解决并发情况下对共享变量的访问和修改。
 
 ### COW
-[聊聊并发-Java中的Copy-On-Write容器]([https://link](http://ifeve.com/java-copy-on-write/))
+[聊聊并发-Java中的Copy-On-Write容器](http://ifeve.com/java-copy-on-write/)
 
 ## 设计
 ### 如何设计一个短链接服务
