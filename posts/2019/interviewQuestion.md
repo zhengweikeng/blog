@@ -327,6 +327,8 @@ where id=1 and version=${version};
 
 第三种方式，如果业务允许模糊查询数据，而且我们的数据足够随机，sql可以采用这种`select * from t order by time offset x/n limit y/n;`，然后查询每个数据库。
 
+[数据库分库分表和带来的唯一ID、分页查询问题的解决](http://www.cnblogs.com/hanzhong/p/10440286.html)
+
 ### 分库分表后，唯一id怎么生成。
 在分库或者分表后，一般不会采用数据库的自增id作为主键id，而是采用全局id生成器的方式生成id。  
 详情看 [分布式系统的唯一id生成算法](#%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%94%AF%E4%B8%80id%E7%94%9F%E6%88%90%E7%AE%97%E6%B3%95)
