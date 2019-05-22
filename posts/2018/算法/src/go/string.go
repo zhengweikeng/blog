@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 func bf(mainString, patternString string) bool {
 	mainStrLen := len(mainString)
 	patternStrLen := len(patternString)
@@ -69,12 +65,12 @@ func rk(mainString, patternString string) bool {
 	return false
 }
 
-func main() {
-	mainString := "acdefg"
-	patternString := "cdeg"
-	fmt.Println("bf result: ", bf(mainString, patternString))
+// func main() {
+// 	mainString := "acdefg"
+// 	patternString := "cdeg"
+// 	fmt.Println("bf result: ", bf(mainString, patternString))
 
-	initSqureNum()
-	fmt.Println("rk result: ", rk(mainString, patternString))
+// 	initSqureNum()
+// 	fmt.Println("rk result: ", rk(mainString, patternString))
 
-}
+// }
