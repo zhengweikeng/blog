@@ -14,10 +14,19 @@ func testInsertSort() {
 	insertSort(arr, 6)
 }
 
+func testSelectSort() {
+	fmt.Println("\n测试选择排序")
+	arr := []int{3, 5, 4, 1, 2, 6}
+	selectSort(arr, 6)
+}
+
 func main() {
 	// 测试冒泡排序
 	testBubbleSort()
 
 	// 测试插入排序
 	testInsertSort()
+
+	// 测试选择排序
+	testSelectSort()
 }
