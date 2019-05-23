@@ -1,5 +1,6 @@
 # leetcode
 * [1 两数之和](./1/two-sum.go)
+* [2 两数相加](./2/add-two-numbers.go)
 * [15 三数之和](./15/three-sum.go)
 * [21 合并两个有序链表](./21/merge-two-sorted-lists.go)
 * [88 合并两个有序数组](./88/merge-sorted-array.go)
