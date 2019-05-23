@@ -16,9 +16,9 @@ func twoSum(nums []int, target int) (res [2]int) {
 		if ok == true {
 			res[0] = val
 			res[1] = i
-		} else {
-			numMap[t] = i
+			return
 		}
+		numMap[t] = i
 	}
 
 	return res
@@ -26,7 +26,7 @@ func twoSum(nums []int, target int) (res [2]int) {
 
 func main() {
 	nums := []int{2, 7, 11, 15}
-	target := 9
+	target := 18
 	res := twoSum(nums, target)
 	fmt.Println(res)
 }
