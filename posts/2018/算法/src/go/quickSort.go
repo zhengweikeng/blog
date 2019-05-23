@@ -7,12 +7,13 @@ func quickSort(arr []int, start, end int) {
 		return
 	}
 
-	pivot := partition(arr, start, end)
+	pivot := partition2(arr, start, end)
 	quickSort(arr, start, pivot-1)
 	quickSort(arr, pivot+1, end)
 }
 
 func partition(arr []int, start, end int) int {
+	fmt.Printf("partition前start=%d,end=%d: %v\n", start, end, arr)
 	pivot := arr[end]
 	i := start
 	j := end - 1
@@ -32,6 +33,7 @@ func partition(arr []int, start, end int) int {
 			j--
 		}
 
+		// 两者相遇，终止循环
 		if i >= j {
 			break
 		}
@@ -39,12 +41,16 @@ func partition(arr []int, start, end int) int {
 		arr[i], arr[j] = arr[j], arr[i]
 	}
 
+	// 此时的arr[i]有可能已经大于pivot，所以要交换一次
 	arr[end], arr[i] = arr[i], arr[end]
-	fmt.Println(arr, i)
+
+	fmt.Printf("partition后pivot=%d: %v\n", i, arr)
+
 	return i
 }
 
 func partition2(arr []int, start, end int) int {
+	fmt.Printf("partition前start=%d,end=%d: %v\n", start, end, arr)
 	pivot := arr[end]
 	i := start
 	j := start
@@ -58,11 +64,13 @@ func partition2(arr []int, start, end int) int {
 
 	arr[i], arr[end] = arr[end], arr[i]
 
+	fmt.Printf("partition后pivot=%d: %v\n", i, arr)
 	return i
 }
 
-// func main() {
-// 	arr := []int{5, 2, 4, 7, 1, 3, 2, 6}
-// 	quickSort(arr, 0, len(arr)-1)
-// 	fmt.Println(arr)
-// }
+func testQuickSort() {
+	fmt.Println("\n=======测试快速排序=======")
+	// arr := []int{1, 2, 3, 4, 5, 6}
+	arr := []int{5, 2, 4, 7, 1, 3, 2, 6}
+	quickSort(arr, 0, len(arr)-1)
+}

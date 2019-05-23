@@ -21,3 +21,9 @@ func bubbleSort(arr []int, size int) {
 		}
 	}
 }
+
+func testBubbleSort() {
+	fmt.Println("\n=======测试冒泡排序=======")
+	arr := []int{3, 5, 4, 1, 2, 6}
+	bubbleSort(arr, 6)
+}

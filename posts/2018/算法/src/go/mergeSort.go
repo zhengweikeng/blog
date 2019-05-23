@@ -16,10 +16,12 @@ func mergeSort(arr []int, left, right int) {
 }
 
 func merge(arr []int, left, mid, right int) {
+	fmt.Printf("merge前left=%d,mid=%d,right=%d: %v\n", left, mid, right, arr)
 	var tmp []int
 	i := left
 	j := mid + 1
 
+	// 比较左右区间的元素，将较小的元素插入临时数组中
 	for i <= mid && j <= right {
 		if arr[i] <= arr[j] {
 			tmp = append(tmp, arr[i])
@@ -30,6 +32,7 @@ func merge(arr []int, left, mid, right int) {
 		}
 	}
 
+	// 判断哪个区间的元素还有剩余，将剩余元素添加到临时数组后面
 	start := i
 	end := mid
 	if j <= right {
@@ -41,14 +44,16 @@ func merge(arr []int, left, mid, right int) {
 		start++
 	}
 
+	// 将临时数组的元素按顺序添加回原始数组
 	for i := 0; i <= right-left; i++ {
 		arr[left+i] = tmp[i]
 	}
 
-	fmt.Println(arr)
+	fmt.Printf("merge后: %v\n\n", arr)
 }
 
-// func main() {
-// 	arr := []int{5, 2, 4, 7, 1, 3, 2, 6}
-// 	mergeSort(arr, 0, len(arr)-1)
-// }
+func testMergeSort() {
+	fmt.Println("\n=======测试归并排序=======")
+	arr := []int{3, 5, 4, 1, 2, 6}
+	mergeSort(arr, 0, 5)
+}

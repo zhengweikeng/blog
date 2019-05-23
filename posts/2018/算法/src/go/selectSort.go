@@ -18,3 +18,9 @@ func selectSort(arr []int, size int) {
 		fmt.Printf("第%d次插入: %v\n", i, arr)
 	}
 }
+
+func testSelectSort() {
+	fmt.Println("\n=======测试选择排序=======")
+	arr := []int{3, 5, 4, 1, 2, 6}
+	selectSort(arr, 6)
+}

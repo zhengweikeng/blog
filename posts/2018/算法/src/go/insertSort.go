@@ -27,3 +27,9 @@ func insertSort(arr []int, size int) {
 		fmt.Printf("第%d次插入: %v\n", i, arr)
 	}
 }
+
+func testInsertSort() {
+	fmt.Println("\n=======测试插入排序=======")
+	arr := []int{3, 5, 4, 1, 2, 6}
+	insertSort(arr, 6)
+}
