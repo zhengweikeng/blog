@@ -11,6 +11,8 @@ type ListNode struct {
 	Next *ListNode
 }
 
+// 时间复杂度: O(n)
+// 空间复杂度: O(n)
 func addTwoNumbers(l1 *ListNode, l2 *ListNode) *ListNode {
 	// 存储进位
 	carried := 0

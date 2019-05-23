@@ -7,6 +7,8 @@ import (
 	"fmt"
 )
 
+// 时间复杂度：O(n)
+// 空间复杂度：O(n)
 func twoSum(nums []int, target int) (res [2]int) {
 	numMap := make(map[int]int)
 
