@@ -957,8 +957,9 @@ net.ipv4.tcp_abort_on_overflow
 2. 要么牺牲一致性，维持可用性，这种方式可以实现最终一致性。
 
 ### 分布式系统的唯一id生成算法
+[分布式场景下生成唯一id的方案](https://mp.weixin.qq.com/s/TM2I_oJWPlpeuxEDDjes1g)   e
 [分布式系统的唯一id生成算法你了解吗？](https://juejin.im/post/5c6be4086fb9a04a060570df)   
-[数据库全局id](https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/database-shard-global-id-generate.md)
+[数据库全局id](https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/database-shard-global-id-generate.md)  
 
 ### 某一个业务中现在需要生成全局唯一的递增 ID, 并发量非常大, 怎么做
 [分布式架构生成全局唯一有序ID方案](https://www.jianshu.com/p/7eb0825f67ca)  
@@ -1019,7 +1020,8 @@ Compare and Swap，一种乐观锁的实现，简单来说就是不通过加锁�
 
 ## 设计
 ### 如何设计一个短链接服务
-[长链接 转短链接URL的设计思路](https://blog.csdn.net/qq_33530388/article/details/78066538)
+[长链接 转短链接URL的设计思路](https://blog.csdn.net/qq_33530388/article/details/78066538)  
+[实现一个短网址系统？](https://time.geekbang.org/column/article/80850)
 
 ### 当缓存需要更新的时候，你觉得应该怎么做才合理？
 [缓存更新的套路](https://coolshell.cn/articles/17416.html?hmsr=toutiao.io&utm_medium=toutiao.io&utm_source=toutiao.io&from=singlemessage&isappinstalled=0)
