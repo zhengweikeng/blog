@@ -938,6 +938,7 @@ net.ipv4.tcp_abort_on_overflow
 ### 微服务数据一致性问题，如何解决？
 
 ### 服务的部署方式有哪些，如何做到不停机部署？
+[架构之道~现代发布模式](https://mp.weixin.qq.com/s/kQQQQqxAHVglfBVf2NGD4w)
 
 ## 分布式
 ### CAP
