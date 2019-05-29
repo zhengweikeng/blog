@@ -5,6 +5,7 @@
 * [15 三数之和](./15/three-sum.go)
 * [21 合并两个有序链表](./21/merge-two-sorted-lists.go)
 * [88 合并两个有序数组](./88/merge-sorted-array.go)
+* [98 验证二叉搜索树](./98/validate-binary-search-tree.go)
 * [141 环形链表](./141/linked-list-cycle.go)
 * [206 反转链表](./206/reverse-linked-list.go)
 * [215 数组中的第K个最大元素](./215/kth-largest-element-in-an-array.go)
