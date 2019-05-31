@@ -81,7 +81,8 @@ https://api.weibo.com/oauth2/authorize?response_type=code&client_id=5abcd&redire
   * code：授权码，必填项
   * redirect_uri：重定向URI，必须与之前提供的一致，必填项
   * client_id：客户端唯一标志，必填项
-  客户端通过post调用的地址为：https://server.example.com/oauth/token?code=aoqisx333&grant_type=authorization_code&redirect_uri=https://www.myWeb.com/cb&client_id=5abcd
+  * client_secret: 客户端的秘钥，必填项
+  客户端通过post调用的地址为：https://server.example.com/oauth/token?code=aoqisx333&grant_type=authorization_code&redirect_uri=https://www.myWeb.com/cb&client_id=5abcd&client_secret=aaabbbccc
 
 第五步，微博认证服务器校验通过后，返回如下字段：
   * access_token：访问令牌，必选项
@@ -121,6 +122,10 @@ https://server.example.com/oauth/token?grant_type=refresh_token&refresh_token=ce
 如果access_token是直接通过302跳转传到我们的网站的，那么中间人就可以拦截到这个token，造成安全漏洞。而只是返回code的话，没有client key是无法获取到token的。
 
 可能有人会想说可以用https，这样中间人就无法拦截了。但是作为认证服务器并不能保证所有请求的客户端都是支持https的。
+
+**这里重要的信息处理client_id外，还有个client_scret，它的作用是什么？**
+主要是为了像认证服务器，拥有这个code的人是合法的。这个secret是个秘钥，只有我们网站自己的服务器和认证服务器（例如微信）能够知道，不能泄露。是为了防止万一我们的DNS遭到污染，导致认证服务器回调我们的地址`https://www.myWeb.com/cb?code=aoqisx333`时，被发送到攻击者的服务器去，它们便能够拿到code，进而换取token。  
+因此必须认证服务器在做code转token的时候，必须多做一层校验，要求请求携带一个秘钥，对比这个秘钥如果一致则可以进行分配token。
 
 #### app应用案例
 对于app来说，大部分情况下采用微信（或微博）登录的目的都是获取微信（或微博）的用户信息，例如头像、昵称和城市等等。然后将这些用户信息存储在服务端。通常的做法都是放在服务端在做整个过程，客户端也不会拿到accss_token。
