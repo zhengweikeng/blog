@@ -114,6 +114,9 @@
     - [goroutine 是怎么调度的？](#goroutine-%E6%98%AF%E6%80%8E%E4%B9%88%E8%B0%83%E5%BA%A6%E7%9A%84)
     - [golang的gc算法](#golang%E7%9A%84gc%E7%AE%97%E6%B3%95)
     - [Golang 里的逃逸分析是什么？怎么避免内存逃逸？](#golang-%E9%87%8C%E7%9A%84%E9%80%83%E9%80%B8%E5%88%86%E6%9E%90%E6%98%AF%E4%BB%80%E4%B9%88%E6%80%8E%E4%B9%88%E9%81%BF%E5%85%8D%E5%86%85%E5%AD%98%E9%80%83%E9%80%B8)
+    - [什么是条件变量？](#%E4%BB%80%E4%B9%88%E6%98%AF%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F)
+    - [为什么先要锁定条件变量的基于的互斥锁，才能调用它的wait方法？](#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%85%88%E8%A6%81%E9%94%81%E5%AE%9A%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F%E7%9A%84%E5%9F%BA%E4%BA%8E%E7%9A%84%E4%BA%92%E6%96%A5%E9%94%81%E6%89%8D%E8%83%BD%E8%B0%83%E7%94%A8%E5%AE%83%E7%9A%84wait%E6%96%B9%E6%B3%95)
+    - [为什么要用for语句来包裹调用其wait方法的表达式，用if语句不行么？](#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E7%94%A8for%E8%AF%AD%E5%8F%A5%E6%9D%A5%E5%8C%85%E8%A3%B9%E8%B0%83%E7%94%A8%E5%85%B6wait%E6%96%B9%E6%B3%95%E7%9A%84%E8%A1%A8%E8%BE%BE%E5%BC%8F%E7%94%A8if%E8%AF%AD%E5%8F%A5%E4%B8%8D%E8%A1%8C%E4%B9%88)
   - [node.js](#nodejs)
     - [阻塞和非阻塞的区别和优缺点。同步和异步的区别和优缺点](#%E9%98%BB%E5%A1%9E%E5%92%8C%E9%9D%9E%E9%98%BB%E5%A1%9E%E7%9A%84%E5%8C%BA%E5%88%AB%E5%92%8C%E4%BC%98%E7%BC%BA%E7%82%B9%E5%90%8C%E6%AD%A5%E5%92%8C%E5%BC%82%E6%AD%A5%E7%9A%84%E5%8C%BA%E5%88%AB%E5%92%8C%E4%BC%98%E7%BC%BA%E7%82%B9)
     - [异步IO模型和事件循环机制](#%E5%BC%82%E6%AD%A5io%E6%A8%A1%E5%9E%8B%E5%92%8C%E4%BA%8B%E4%BB%B6%E5%BE%AA%E7%8E%AF%E6%9C%BA%E5%88%B6)
@@ -1030,6 +1033,7 @@ Compare and Swap，一种乐观锁的实现，简单来说就是不通过加锁�
 # 语言
 ## golang
 ### 如何实现CAS。
+参考sync.Once的实现。
 
 ### 关于golang for-range 的坑
 ```go
@@ -1116,6 +1120,12 @@ runtime.GOMAXPROCS(cpuNum)
 ### golang的gc算法
 
 ### Golang 里的逃逸分析是什么？怎么避免内存逃逸？
+
+### 什么是条件变量？
+
+### 为什么先要锁定条件变量的基于的互斥锁，才能调用它的wait方法？
+
+### 为什么要用for语句来包裹调用其wait方法的表达式，用if语句不行么？
 
 ## node.js
 [node-interview-questions](https://github.com/jimuyouyou/node-interview-questions)   
