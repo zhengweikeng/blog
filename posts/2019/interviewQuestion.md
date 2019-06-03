@@ -26,6 +26,7 @@
     - [知道动态字符串sds的优缺点么？](#%E7%9F%A5%E9%81%93%E5%8A%A8%E6%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2sds%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9%E4%B9%88)
     - [redis有哪些数据结构，分别使用在什么场景？](#redis%E6%9C%89%E5%93%AA%E4%BA%9B%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%88%86%E5%88%AB%E4%BD%BF%E7%94%A8%E5%9C%A8%E4%BB%80%E4%B9%88%E5%9C%BA%E6%99%AF)
     - [redis是如何清理过期key的？](#redis%E6%98%AF%E5%A6%82%E4%BD%95%E6%B8%85%E7%90%86%E8%BF%87%E6%9C%9Fkey%E7%9A%84)
+    - [过期key同时大批量过期会怎么样？](#%E8%BF%87%E6%9C%9Fkey%E5%90%8C%E6%97%B6%E5%A4%A7%E6%89%B9%E9%87%8F%E8%BF%87%E6%9C%9F%E4%BC%9A%E6%80%8E%E4%B9%88%E6%A0%B7)
     - [什么是缓存穿透？如何避免？什么是缓存雪崩？何如避免？](#%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E4%BD%95%E5%A6%82%E9%81%BF%E5%85%8D)
     - [redis分布式锁](#redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81)
     - [简述Redis分布式锁的缺陷？](#%E7%AE%80%E8%BF%B0redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E7%9A%84%E7%BC%BA%E9%99%B7)
@@ -535,6 +536,8 @@ hyperloglog、bloomfilter
 
 ### redis是如何清理过期key的？
 [key过期处理](https://github.com/zhengweikeng/blog/blob/master/posts/2018/redis/%E8%BF%87%E6%9C%9Fkey.md)
+
+### 过期key同时大批量过期会怎么样？
 
 ### 什么是缓存穿透？如何避免？什么是缓存雪崩？何如避免？
 [缓存](https://github.com/zhengweikeng/blog/blob/master/posts/2018/redis/%E4%BC%98%E5%8C%96.md)   
