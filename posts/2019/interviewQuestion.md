@@ -974,6 +974,8 @@ net.ipv4.tcp_abort_on_overflow
 ### 我现在要做一个限流功能, 怎么做?
 漏桶算法和令牌桶算法
 
+[关于服务限流的一些思考](https://juejin.im/post/5cf2007951882521bf3407db?utm_source=gold_browser_extension)
+
 ### 这个限流要做成分布式的, 怎么做?
 令牌桶维护到 Redis 里，每个实例起一个线程抢锁，抢到锁的负责定时放令牌
 
@@ -1009,6 +1011,8 @@ Compare and Swap，一种乐观锁的实现，简单来说就是不通过加锁�
 最佳线程数 = 1 + (I/O耗时 / CPU耗时)  
 如果是多核：  
 最佳线程数 = CPU核数 * (1 + (I/O耗时 / CPU耗时))  
+
+[多线程，到底该设置多少个线程？](https://juejin.im/post/5cf35e195188252c023f9b72?utm_source=gold_browser_extension)
 
 ### 死锁的产生，如何避免死锁
 一旦发生死锁，很多时候只能重启应用。
