@@ -74,6 +74,7 @@
     - [如果出现大量的LAST_ACK状态，说明什么原因？](#%E5%A6%82%E6%9E%9C%E5%87%BA%E7%8E%B0%E5%A4%A7%E9%87%8F%E7%9A%84lastack%E7%8A%B6%E6%80%81%E8%AF%B4%E6%98%8E%E4%BB%80%E4%B9%88%E5%8E%9F%E5%9B%A0)
     - [DNS的查找过程](#dns%E7%9A%84%E6%9F%A5%E6%89%BE%E8%BF%87%E7%A8%8B)
     - [DNS使用的是TCP协议还是UDP协议？](#dns%E4%BD%BF%E7%94%A8%E7%9A%84%E6%98%AFtcp%E5%8D%8F%E8%AE%AE%E8%BF%98%E6%98%AFudp%E5%8D%8F%E8%AE%AE)
+    - [CDN原理](#cdn%E5%8E%9F%E7%90%86)
     - [滑动窗口和拥塞控制](#%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E5%92%8C%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6)
     - [301和302有什么区别](#301%E5%92%8C302%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB)
     - [504和500有什么区别](#504%E5%92%8C500%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB)
@@ -865,6 +866,9 @@ net.ipv4.tcp_fin_timeout = 60   // 保持在fin_wait_2状态的时间
 
 ### DNS使用的是TCP协议还是UDP协议？
 [DNS使用的是TCP协议还是UDP协议](https://benbenxiongyuan.iteye.com/blog/1088085)
+
+### CDN原理
+[CDN的实现原理](https://www.cnblogs.com/rayray/p/3553696.html)
 
 ### 滑动窗口和拥塞控制
 
