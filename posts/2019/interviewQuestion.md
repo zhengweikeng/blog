@@ -82,6 +82,8 @@
     - [一个TCP连接可以对应几个HTTP请求？](#%e4%b8%80%e4%b8%aatcp%e8%bf%9e%e6%8e%a5%e5%8f%af%e4%bb%a5%e5%af%b9%e5%ba%94%e5%87%a0%e4%b8%aahttp%e8%af%b7%e6%b1%82)
     - [一个TCP连接中HTTP请求发送可以一起发送么？](#%e4%b8%80%e4%b8%aatcp%e8%bf%9e%e6%8e%a5%e4%b8%adhttp%e8%af%b7%e6%b1%82%e5%8f%91%e9%80%81%e5%8f%af%e4%bb%a5%e4%b8%80%e8%b5%b7%e5%8f%91%e9%80%81%e4%b9%88)
     - [https的建立过程](#https%e7%9a%84%e5%bb%ba%e7%ab%8b%e8%bf%87%e7%a8%8b)
+    - [聊聊cookie和seesion](#%e8%81%8a%e8%81%8acookie%e5%92%8cseesion)
+    - [Secure和HttpOnly的作用](#secure%e5%92%8chttponly%e7%9a%84%e4%bd%9c%e7%94%a8)
     - [tcp如何保证可靠传输的？](#tcp%e5%a6%82%e4%bd%95%e4%bf%9d%e8%af%81%e5%8f%af%e9%9d%a0%e4%bc%a0%e8%be%93%e7%9a%84)
     - [TCP的keep-alive的作用？它和http的keep-alive有什么差别](#tcp%e7%9a%84keep-alive%e7%9a%84%e4%bd%9c%e7%94%a8%e5%ae%83%e5%92%8chttp%e7%9a%84keep-alive%e6%9c%89%e4%bb%80%e4%b9%88%e5%b7%ae%e5%88%ab)
     - [谈谈tcp的三次握手和四次挥手。为什么建立连接需要三次，而不是两次？](#%e8%b0%88%e8%b0%88tcp%e7%9a%84%e4%b8%89%e6%ac%a1%e6%8f%a1%e6%89%8b%e5%92%8c%e5%9b%9b%e6%ac%a1%e6%8c%a5%e6%89%8b%e4%b8%ba%e4%bb%80%e4%b9%88%e5%bb%ba%e7%ab%8b%e8%bf%9e%e6%8e%a5%e9%9c%80%e8%a6%81%e4%b8%89%e6%ac%a1%e8%80%8c%e4%b8%8d%e6%98%af%e4%b8%a4%e6%ac%a1)
@@ -935,10 +937,51 @@ Connection: keepalive;
 ### https的建立过程
 [https](https://github.com/zhengweikeng/blog/blob/master/posts/2018/%E7%BD%91%E7%BB%9C/https.md)
 
+### 聊聊cookie和seesion
+http是无状态的协议，也就是意味着每个请求都是相互独立、互不影响的，为了让客户端能够服务端建立联系，可以使用cookie和session。
+
+cookie是服务器向浏览器返回的信息，它会被保存在浏览器，下次请求的时候会被再次带上服务器，服务器通过浏览器带上来的cookie便能知道是哪个浏览器，这就是会话管理。
+
+服务端返回cookie，通过响应头`Set-Cookie`，而浏览器发送cookie，通过请求头`Cookie`
+```
+# 服务器响应
+HTTP/1.1 200 OK
+Content-Type: text/html
+Set-Cookie: hello=world
+Set-Cookie: foo=bar
+
+[page content]
+
+# 浏览器请求
+GET /index.html HTTP/1.1
+Host: www.example.com
+Cookie: hello=world; foo=bar
+```
+cookie会分为两种：
+1. 会话期Cookie：浏览器关闭之后它会被自动删除，也就是说它仅在会话期内有效。
+2. 持久性Cookie：指定一个特定的过期时间（Expires）或有效期（max-age）之后就成为了持久性的 Cookie。
+```
+Set-Cookie: id=a3fWa; Expires=Wed, 21 Oct 2015 07:28:00 GMT;
+```
+
+一般来说，我们不会将敏感的信息通过cookie的方式传给浏览器，这样也不安全，存储在服务器端会更加安全，这就是session。session可以存储在文件、内存或者数据库中，一般我们会存储在redis中。
+
+### Secure和HttpOnly的作用
+为了让cookie更加安全，服务端在返回cookie的时候一般会设置secure和httponly。
+```
+HTTP/1.1 200 OK
+Content-Type: text/html
+Set-Cookie: hello=world; Secure; HttpOnly;
+
+[page content]
+```
+* Secure，只允许cookie通过https的方式发给服务器，如果采用http协议，cookie无法发送给服务器。例如登录的时候采用的是https，浏览器获取到cookie后，采用http访问其他页面，由于cookie无法发送到服务器，因此会被提示没有登录。
+* HttpOnly，可以让浏览器的javascript获取不到cookie，即无法通过`Document.cookie`获取cookie，一定程度上避免XSS攻击。
+
 ### tcp如何保证可靠传输的？
 1. 应用数据被分割成TCP认为最适合发送的数据块。
-1. TCP给发送的每一个包进行编号，接收方对数据包进行排序，把有序数据传送给应用层。
-1. **校验和**： TCP将保持它首部和数据的检验和。这是一个端到端的检验和，目的是检测数据在传输过程中的任何变化。如果收到段的检验和有差错，TCP将丢弃这个报文段和不确认收到此报文段。
+2. TCP给发送的每一个包进行编号，接收方对数据包进行排序，把有序数据传送给应用层。
+3. **校验和**： TCP将保持它首部和数据的检验和。这是一个端到端的检验和，目的是检测数据在传输过程中的任何变化。如果收到段的检验和有差错，TCP将丢弃这个报文段和不确认收到此报文段。
 TCP的接收端会丢弃重复的数据。
 1. **流量控制**： TCP连接的每一方都有固定大小的缓冲空间，TCP的接收端只允许发送端发送接收端缓冲区能接纳的数据。当接收方来不及处理发送方的数据，能提示发送方降低发送的速率，防止包丢失。TCP使用的流量控制协议是可变大小的滑动窗口协议。 （TCP利用滑动窗口实现流量控制）
 1. **拥塞控制**： 当网络拥塞时，减少数据的发送。
@@ -964,7 +1007,10 @@ tcp的keep-alive是用来试探对方连接是否还活着，通过定时发送�
 2. 服务端：ESTABLISHED --> CLOSE_WAIT --> LASK_ACK --> CLOSED
 
 ### 三次握手时，如果服务端没有收到最后的ack包，客户端可以开始发数据么？
-可以的。实际上也是这么做的。请求的数据也是随着最后一个ACK一起发送过去。
+一般来说，如果服务端没有最后客户端发送的ack，会每隔一段时间重新发送SYN+ACK包，这个重试的次数由系统参数**net.ipv4.tcp_synack_retries**决定，默认大概是5次左右，每次时间为3秒、6秒、12秒，如果最后一直都没收到，则会认为连接失效，关闭连接回收资源。如果此时（服务端连接已经关闭）客户端还发送数据过去（因为客户端在发送ACK的时候已经是ESTABLISHED状态了），会被返回一个RST的包，这是客户端也就知道服务端关闭连接了。
+
+但是正常情况下，客户端在回复最后的ACK之后，自己的状态已经是ESTABLISHED了，即将发送的数据也会立马发送出去，这个数据里也会包含这个ACK，因此三次握手最后的ACK最终能不能到达服务端，其实已经无所谓，只要数据到达了，服务端也能通过数据里的这个ACK，进而和客户端建立连接。  
+即使客户端在三次握手发完最后的ACK后，没有立马发送数据，我们也可以开启keepalive或者应用层心跳包的机制来实现服务端探活。
 
 ### 为什么接收方在FIN包后不能一次性发送ACK和FIN包给发送方，就像建立连接时一次性发送SYN和ACK包一样。
 因为TCP连接是双工通信的，连接的双方都具备收数据和发数据的能力。当客户端发送FIN后，只是说明了客户端不再发数据了，但是客户端可能还在收数据，也就是服务端还在发数据，因此不能立马发送FIN包。
