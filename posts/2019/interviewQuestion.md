@@ -89,6 +89,7 @@
     - [谈谈tcp的三次握手和四次挥手。为什么建立连接需要三次，而不是两次？](#%e8%b0%88%e8%b0%88tcp%e7%9a%84%e4%b8%89%e6%ac%a1%e6%8f%a1%e6%89%8b%e5%92%8c%e5%9b%9b%e6%ac%a1%e6%8c%a5%e6%89%8b%e4%b8%ba%e4%bb%80%e4%b9%88%e5%bb%ba%e7%ab%8b%e8%bf%9e%e6%8e%a5%e9%9c%80%e8%a6%81%e4%b8%89%e6%ac%a1%e8%80%8c%e4%b8%8d%e6%98%af%e4%b8%a4%e6%ac%a1)
     - [tcp有哪些状态，相应状态的含义。](#tcp%e6%9c%89%e5%93%aa%e4%ba%9b%e7%8a%b6%e6%80%81%e7%9b%b8%e5%ba%94%e7%8a%b6%e6%80%81%e7%9a%84%e5%90%ab%e4%b9%89)
     - [三次握手时，如果服务端没有收到最后的ack包，客户端可以开始发数据么？](#%e4%b8%89%e6%ac%a1%e6%8f%a1%e6%89%8b%e6%97%b6%e5%a6%82%e6%9e%9c%e6%9c%8d%e5%8a%a1%e7%ab%af%e6%b2%a1%e6%9c%89%e6%94%b6%e5%88%b0%e6%9c%80%e5%90%8e%e7%9a%84ack%e5%8c%85%e5%ae%a2%e6%88%b7%e7%ab%af%e5%8f%af%e4%bb%a5%e5%bc%80%e5%a7%8b%e5%8f%91%e6%95%b0%e6%8d%ae%e4%b9%88)
+    - [知道SYN洪攻击么？](#%e7%9f%a5%e9%81%93syn%e6%b4%aa%e6%94%bb%e5%87%bb%e4%b9%88)
     - [为什么接收方在FIN包后不能一次性发送ACK和FIN包给发送方，就像建立连接时一次性发送SYN和ACK包一样。](#%e4%b8%ba%e4%bb%80%e4%b9%88%e6%8e%a5%e6%94%b6%e6%96%b9%e5%9c%a8fin%e5%8c%85%e5%90%8e%e4%b8%8d%e8%83%bd%e4%b8%80%e6%ac%a1%e6%80%a7%e5%8f%91%e9%80%81ack%e5%92%8cfin%e5%8c%85%e7%bb%99%e5%8f%91%e9%80%81%e6%96%b9%e5%b0%b1%e5%83%8f%e5%bb%ba%e7%ab%8b%e8%bf%9e%e6%8e%a5%e6%97%b6%e4%b8%80%e6%ac%a1%e6%80%a7%e5%8f%91%e9%80%81syn%e5%92%8cack%e5%8c%85%e4%b8%80%e6%a0%b7)
     - [如果大量出现CLOSE_WAIT状态，说明什么？](#%e5%a6%82%e6%9e%9c%e5%a4%a7%e9%87%8f%e5%87%ba%e7%8e%b0closewait%e7%8a%b6%e6%80%81%e8%af%b4%e6%98%8e%e4%bb%80%e4%b9%88)
     - [TIME_WAIT的作用？以及出现大量TIME_WAIT的原因。](#timewait%e7%9a%84%e4%bd%9c%e7%94%a8%e4%bb%a5%e5%8f%8a%e5%87%ba%e7%8e%b0%e5%a4%a7%e9%87%8ftimewait%e7%9a%84%e5%8e%9f%e5%9b%a0)
@@ -1011,6 +1012,36 @@ tcp的keep-alive是用来试探对方连接是否还活着，通过定时发送�
 
 但是正常情况下，客户端在回复最后的ACK之后，自己的状态已经是ESTABLISHED了，即将发送的数据也会立马发送出去，这个数据里也会包含这个ACK，因此三次握手最后的ACK最终能不能到达服务端，其实已经无所谓，只要数据到达了，服务端也能通过数据里的这个ACK，进而和客户端建立连接。  
 即使客户端在三次握手发完最后的ACK后，没有立马发送数据，我们也可以开启keepalive或者应用层心跳包的机制来实现服务端探活。
+
+### 知道SYN洪攻击么？
+就是利用tcp三次握手的时候，攻击方发起tcp连接，收到服务端的SYN+ACK包后，则不回复ACK包，继续发起新的连接。通过这种方式，服务端会大量的连接处于SYN_RECV状态，最终将队列撑满，而正常的连接因为队列满了只能被丢弃，服务端处于无法提供服务状态。
+
+首先可以看攻击者的ip是否固定，固定则用防火墙封ip。
+
+一般攻击者ip是不固定的，可以限制SYN的并发数或者限制连接数
+```
+# 限制SYN并发数为秒1次
+$ iptables -A INPUT -p tcp --syn -m limit --limit 1/s -j ACCEPT
+
+# 限制单个IP在60秒新建立的连接数为10
+$ iptables -I INPUT -p tcp --dport 80 --syn -m recent --name SYN_FLOOD --update --seconds 60 --hitcount 10 -j REJECT
+```
+
+如果是分布式多台机器同时发动攻击的，我们可以做一些tcp的优化，例如增大队列大小
+```
+sysctl -w net.ipv4.tcp_max_syn_backlog=1024
+```
+将syn+acs的重试次数减小
+```
+$ sysctl -w net.ipv4.tcp_synack_retries=1
+```
+
+另外，也可以开启TCP SYN Cookies也可以进行防御SYN Flood攻击。  
+SYN Cookies基于连接信息（源端口、目标端口、源地址、目标地址）以及一个加密种子（如系统启动时间），计算出一个哈希值，这个哈希值称为cookie。  
+在客户端发送完3次握手的最后一次ACK后，服务器会再次计算这个哈希值，看看是否和上次返回的SYN+ACK匹配，然后才会进入TCP的连接状态。通过它，就不需要用队列来维护连接状态了，所以也就不会受那个参数的限制。开启cookie，就会让tcp_max_syn_backlog失效。
+```
+$ sysctl -w net.ipv4.tcp_syncookies=1
+```
 
 ### 为什么接收方在FIN包后不能一次性发送ACK和FIN包给发送方，就像建立连接时一次性发送SYN和ACK包一样。
 因为TCP连接是双工通信的，连接的双方都具备收数据和发数据的能力。当客户端发送FIN后，只是说明了客户端不再发数据了，但是客户端可能还在收数据，也就是服务端还在发数据，因此不能立马发送FIN包。
