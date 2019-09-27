@@ -111,14 +111,14 @@
     - [Tcp连接断开的操作中，close和shutdown的区别？](#tcp%e8%bf%9e%e6%8e%a5%e6%96%ad%e5%bc%80%e7%9a%84%e6%93%8d%e4%bd%9c%e4%b8%adclose%e5%92%8cshutdown%e7%9a%84%e5%8c%ba%e5%88%ab)
     - [网络编程中，增大缓冲区是否可以提高程序吞吐率？](#%e7%bd%91%e7%bb%9c%e7%bc%96%e7%a8%8b%e4%b8%ad%e5%a2%9e%e5%a4%a7%e7%bc%93%e5%86%b2%e5%8c%ba%e6%98%af%e5%90%a6%e5%8f%af%e4%bb%a5%e6%8f%90%e9%ab%98%e7%a8%8b%e5%ba%8f%e5%90%9e%e5%90%90%e7%8e%87)
     - [UDP如何实现连接异常通知？（或者说udp中connect函数的作用？）](#udp%e5%a6%82%e4%bd%95%e5%ae%9e%e7%8e%b0%e8%bf%9e%e6%8e%a5%e5%bc%82%e5%b8%b8%e9%80%9a%e7%9f%a5%e6%88%96%e8%80%85%e8%af%b4udp%e4%b8%adconnect%e5%87%bd%e6%95%b0%e7%9a%84%e4%bd%9c%e7%94%a8)
+    - [用过哪些RPC框架么，讲讲有缺点](#%e7%94%a8%e8%bf%87%e5%93%aa%e4%ba%9brpc%e6%a1%86%e6%9e%b6%e4%b9%88%e8%ae%b2%e8%ae%b2%e6%9c%89%e7%bc%ba%e7%82%b9)
+    - [聊聊阻塞I/O和非阻塞I/O](#%e8%81%8a%e8%81%8a%e9%98%bb%e5%a1%9eio%e5%92%8c%e9%9d%9e%e9%98%bb%e5%a1%9eio)
+    - [网络中断时，需要如何正确处理异常？](#%e7%bd%91%e7%bb%9c%e4%b8%ad%e6%96%ad%e6%97%b6%e9%9c%80%e8%a6%81%e5%a6%82%e4%bd%95%e6%ad%a3%e7%a1%ae%e5%a4%84%e7%90%86%e5%bc%82%e5%b8%b8)
   - [网络安全](#%e7%bd%91%e7%bb%9c%e5%ae%89%e5%85%a8)
     - [解决跨域的方式](#%e8%a7%a3%e5%86%b3%e8%b7%a8%e5%9f%9f%e7%9a%84%e6%96%b9%e5%bc%8f)
     - [理解xss](#%e7%90%86%e8%a7%a3xss)
     - [理解csrf](#%e7%90%86%e8%a7%a3csrf)
     - [SYN Flood攻击](#syn-flood%e6%94%bb%e5%87%bb)
-  - [网络通信](#%e7%bd%91%e7%bb%9c%e9%80%9a%e4%bf%a1)
-    - [用过哪些RPC框架么，讲讲有缺点](#%e7%94%a8%e8%bf%87%e5%93%aa%e4%ba%9brpc%e6%a1%86%e6%9e%b6%e4%b9%88%e8%ae%b2%e8%ae%b2%e6%9c%89%e7%bc%ba%e7%82%b9)
-    - [聊聊阻塞I/O和非阻塞I/O](#%e8%81%8a%e8%81%8a%e9%98%bb%e5%a1%9eio%e5%92%8c%e9%9d%9e%e9%98%bb%e5%a1%9eio)
 - [系统设计](#%e7%b3%bb%e7%bb%9f%e8%ae%be%e8%ae%a1)
   - [微服务](#%e5%be%ae%e6%9c%8d%e5%8a%a1)
     - [谈谈服务雪崩、降级、熔断](#%e8%b0%88%e8%b0%88%e6%9c%8d%e5%8a%a1%e9%9b%aa%e5%b4%a9%e9%99%8d%e7%ba%a7%e7%86%94%e6%96%ad)
@@ -1182,29 +1182,6 @@ Shutdown不受计数影响，会立即关闭连接，但是它可以关闭读或
 
 同样的道理，udp服务端也可以调用connect，此时服务端便和客户端一对一对应了，此时服务端便不能和其他客户端交互了，一般来说不会在服务端调用connect函数。
 
-## 网络安全
-### 解决跨域的方式
-[跨域的解决方式](https://github.com/zhengweikeng/blog/blob/master/posts/2018/%E5%AE%89%E5%85%A8/cors.md)
-
-### 理解xss
-[xss](https://github.com/zhengweikeng/blog/blob/master/posts/2018/%E5%AE%89%E5%85%A8/xss.md)
-
-### 理解csrf
-[csrf](https://github.com/zhengweikeng/blog/blob/master/posts/2018/%E5%AE%89%E5%85%A8/csrf.md)
-
-### SYN Flood攻击
-```
-# 接收自网卡、但未被内核协议栈处理的报文队列长度
-net.core.netdev_max_backlog
-
-# syn_rcvd状态数的最大个数
-net.ipv4.tcp_max_syn_backlog
-
-# 超出处理能力时，对新来的SYN包直接回复RST，丢弃连接
-net.ipv4.tcp_abort_on_overflow
-```
-
-## 网络通信
 ### 用过哪些RPC框架么，讲讲有缺点
 
 ### 聊聊阻塞I/O和非阻塞I/O
@@ -1228,6 +1205,39 @@ net.ipv4.tcp_abort_on_overflow
 在网络编程中，一般来说我们会使用非阻塞I/O，同时结合I/O多路复用，如select、poll和epoll等，避免CPU空转，如非阻塞I/O下，read读不到数据会立即返回，我们需要不断循环直到有数据到来，但是结合多路复用，则可以减少循环的次数，让数据到来的时候及时通知进程或者线程，减少CPU空转。
 
 在node.js下，甚至做到了非阻塞I/O+异步I/O，让I/O的性能得到更进一步的提升。
+
+### 网络中断时，需要如何正确处理异常？
+当网络发生中断，导致其中一端程序奔溃，另一端连接需要合理处理这种异常。
+
+第一种情况是，对端无FIN包过来。
+1. 当本端发生网络中断，此时由于对端并没有FIN包过来，自己是无法感知到连接断开的。如果本端一直阻塞的调用read，则会被一直阻塞，除非给read设置一个超时时间。另外在read前，给对端发送了数据，由于无法感知连接断开，于是会不断重新发送，直到超过重试阈值，此时read会收到TIMEOUT的错误，继续写操作会有SIGPIPE错误。
+2. 另一种是对端系统突然发生奔溃（如断电），网络也来不及发送FIN包出去，本端也只能依赖read和write的超时机制来判断对端是否关闭连接。如果对端奔溃后重启，本端重试发送的数据，由于对端系统中没有该tcp分组对应的连接数据，会收到对端发送过来RST错误，说明连接已经失效，程序可以对此进行处理。
+
+第二种情况是，对端有发送FIN包，可能是对端正常close，也可能是程序奔溃，由系统内核代为发出FIN包
+1. 如果本端收到FIN包后，后续也没有给对端发送数据，FIN包会作为EOF符号放入接收缓冲区，read的返回值会是0。通过判断该值便能知道对端断开了连接。
+2. 如果本端收到FIN包后，继续给对端发送数据，此时对端会立即回复一个RST错误信息，但是如果本端机器是linux，read会收到的是一个EOF（即read返回值是0），而在macos上，read会收到RST错误。
+
+## 网络安全
+### 解决跨域的方式
+[跨域的解决方式](https://github.com/zhengweikeng/blog/blob/master/posts/2018/%E5%AE%89%E5%85%A8/cors.md)
+
+### 理解xss
+[xss](https://github.com/zhengweikeng/blog/blob/master/posts/2018/%E5%AE%89%E5%85%A8/xss.md)
+
+### 理解csrf
+[csrf](https://github.com/zhengweikeng/blog/blob/master/posts/2018/%E5%AE%89%E5%85%A8/csrf.md)
+
+### SYN Flood攻击
+```
+# 接收自网卡、但未被内核协议栈处理的报文队列长度
+net.core.netdev_max_backlog
+
+# syn_rcvd状态数的最大个数
+net.ipv4.tcp_max_syn_backlog
+
+# 超出处理能力时，对新来的SYN包直接回复RST，丢弃连接
+net.ipv4.tcp_abort_on_overflow
+```
 
 # 系统设计
 [系统设计入门](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md)
