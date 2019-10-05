@@ -803,7 +803,8 @@ set k2 100
 [漏斗限流](https://juejin.im/book/5afc2e5f6fb9a07a9b362527/section/5b44aaf75188251a9f248c4c)
 
 ### 热key问题如何解决
-[谈谈redis的热key问题如何解决](https://zhuanlan.zhihu.com/p/65959998)
+[谈谈redis的热key问题如何解决](https://zhuanlan.zhihu.com/p/65959998)  
+[Cache：多级缓存架构在消息系统中的应用](https://time.geekbang.org/column/article/144529)
 
 # 消息队列
 ## 如何确保消息不会丢失？
