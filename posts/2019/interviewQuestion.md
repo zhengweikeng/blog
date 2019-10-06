@@ -29,8 +29,11 @@
   - [Redis](#redis)
     - [Redis 有什么优点?](#redis-%e6%9c%89%e4%bb%80%e4%b9%88%e4%bc%98%e7%82%b9)
     - [redis的底层数据结构了解多少](#redis%e7%9a%84%e5%ba%95%e5%b1%82%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84%e4%ba%86%e8%a7%a3%e5%a4%9a%e5%b0%91)
-    - [知道动态字符串sds的优缺点么？](#%e7%9f%a5%e9%81%93%e5%8a%a8%e6%80%81%e5%ad%97%e7%ac%a6%e4%b8%b2sds%e7%9a%84%e4%bc%98%e7%bc%ba%e7%82%b9%e4%b9%88)
     - [redis有哪些数据结构，分别使用在什么场景？](#redis%e6%9c%89%e5%93%aa%e4%ba%9b%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84%e5%88%86%e5%88%ab%e4%bd%bf%e7%94%a8%e5%9c%a8%e4%bb%80%e4%b9%88%e5%9c%ba%e6%99%af)
+    - [知道动态字符串sds的优缺点么？](#%e7%9f%a5%e9%81%93%e5%8a%a8%e6%80%81%e5%ad%97%e7%ac%a6%e4%b8%b2sds%e7%9a%84%e4%bc%98%e7%bc%ba%e7%82%b9%e4%b9%88)
+    - [redis中hashmap是如何扩容的？](#redis%e4%b8%adhashmap%e6%98%af%e5%a6%82%e4%bd%95%e6%89%a9%e5%ae%b9%e7%9a%84)
+    - [知道hyperloglog么？](#%e7%9f%a5%e9%81%93hyperloglog%e4%b9%88)
+    - [知道bloomfilter么？](#%e7%9f%a5%e9%81%93bloomfilter%e4%b9%88)
     - [redis 内存淘汰机制](#redis-%e5%86%85%e5%ad%98%e6%b7%98%e6%b1%b0%e6%9c%ba%e5%88%b6)
     - [redis是如何清理过期key的？](#redis%e6%98%af%e5%a6%82%e4%bd%95%e6%b8%85%e7%90%86%e8%bf%87%e6%9c%9fkey%e7%9a%84)
     - [过期key同时大批量过期会怎么样？](#%e8%bf%87%e6%9c%9fkey%e5%90%8c%e6%97%b6%e5%a4%a7%e6%89%b9%e9%87%8f%e8%bf%87%e6%9c%9f%e4%bc%9a%e6%80%8e%e4%b9%88%e6%a0%b7)
@@ -427,28 +430,37 @@ ALTER TABLE t engine=InnoDB;
 最上层统一的头部
 ```c
 struct RedisObject {
-    int4 type;
-    int4 encoding;
-    int24 lru;
-    int32 refcount;
-    void *ptr;
+    int4 type; // 4bits，记录不同数据类型
+    int4 encoding; // 4bits，同一类型下的不同存储形式
+    int24 lru; // 24bits，记录对象的LRU信息
+    int32 refcount; // 4bytes，对象的引用计数，计数为零，对象就被销毁，内存被回收
+    void *ptr; // 8bytes（64 bit system），指向对象内容的具体存储位置
 }
 ```
-ptr是个指针，指向具体的数据。
+可见一个对象头需要占用16字节的存储空间
+```
+redis> set codehole abcd
+Ok
+redis> debug object codehole
+Value at:0x7fb47d434e10 refcount:1 encoding:embstr serializedlength:5 lru:10076033 lru_seconds_idle:8
+```
 
-字符串采用动态字符串实现，数据结构为SDS，通过预先分配一个容量减少内存的频繁分配，也记录了字符串的长度大小。
+字符串：  
+采用动态字符串实现，数据结构为SDS（Simple Dynamic String），通过预先分配一定容量，可以减少内存的频繁分配。
 ```c
 stuct SDS<T> {
-    T capacity 
-    T len
-    byte flags
-    byte[] content
+    T capacity // 数组容量，即所分配的数组长度
+    T len // 数组长度，即字符串实际的长度
+    byte flags // 特殊标志位
+    byte[] content // 存储字符串内容，数组大小为capacity，字符串数组最终以\0结尾
 }
 ```
-而根据字符串的长度，采用了不同的方式存储字符串：
+可见该结构下，无需遍历字符串即可获取到字符串长度（len）。定义容量的目的是为了在采用append的时候避免重新分配空间，直接在数组后面追加即可，但是超过容量大小时，还是得重新分配。刚创建字符串时容量和长度是一样的（capacity==len），因为我们大部分情况下并不会使用append来修改字符串。
+
+根据字符串的长度，采用了不同的方式存储字符串：
 1. embstr，在字符串长度小于44字节时，使用这种格式存储。优点就是它只需要分配一次空间，redisObject和sds是连续的。缺点就是长度增加导致需要重新分配内存时，整个redisObject和sds都要重新分配。
-   ![WX20190226-153702@2x](./images/WX20190226-161136@2x.png)
-2. raw，字符串长度大于44字节时，使用这种格式。优点就是在重新分配内存的时候只需要分配sds的。缺点就是它需要分配两次内存空间，分别要为redisObject和sds分配空间。
+   ![WX20190226-153702@2x](./images/WX20191006-230934@2x.png)
+2. raw，字符串长度大于44字节时，使用这种格式。优点就是在重新分配内存的时候只需要分配sds的。缺点就是在初次创建的时候需要分配两次内存空间，分别要为redisObject和sds分配空间。
    ![WX20190226-153702@2x](./images/WX20190226-161317@2x.png)
 
 列表：
@@ -463,12 +475,14 @@ stuct SDS<T> {
     }
 
     struct entry {
-        int<var> prevlen; // 前一个 entry 的字节长度 当长度小于254字节，用1个字节存储；否则，用5个字节存储
+        // 前一个 entry 的字节长度 当长度小于254字节，用1个字节存储；否则，用5个字节存储
+        // 当压缩列表倒着遍历时，通过这个字段可以快速定位下一个元素的位置
+        int<var> prevlen; 
         int<var> encoding; // 元素类型编码
         optional byte[] content; // 元素内容
     }
     ```
-    ![ziplist](./images/WX20190226-163238@2x.png)
+    ![ziplist](./images/WX20191006-233214@2x.png)
 2. 在元素较多的时候，为了能够快速插入和删除，采用了链表（lintedlist）的方式实现。每个节点都需要存储前一个和后一个节点的地址，每一个指针需要占据8个字节（64位机器）。
     ```c
     struct listNode<T> {
@@ -483,7 +497,7 @@ stuct SDS<T> {
     }
     ```
     ![WX20190226-163333@2x](./images/WX20190226-163333@2x.png)
-3. 由于链表中每个节点中占据的空间较大（16个字节的指针空间），因此在后续的版本中，实现上被改为了快速列表（quicklist）。将linkedlist按段切分，每一段使用ziplist来紧凑存储，多个ziplist之间使用双向指针串起来。而且还可以对ziplist使用LZF算法进行了压缩存储。
+3. 由于链表中每个节点中占据的空间较大（16个字节的指针空间），因此在后续的版本中（3.2），无论元素多少，列表的实现都被改为了快速列表（quicklist）。将linkedlist按段切分，每一段使用ziplist来紧凑存储，多个ziplist之间使用双向指针串起来。而且还可以对ziplist使用LZF算法进行了压缩存储。
     ```c
     struct ziplist_compressed {
         int32 size;
@@ -507,6 +521,7 @@ stuct SDS<T> {
         ...
     }
     ```
+    ![quicklist](./images/WX20191007-003110@2x.png)
 
 hash哈希：
 1. 在元素个数小于512个（set-max-intset-entries配置）并且每个元素长度小于64字节，采用ziplist实现
@@ -516,9 +531,10 @@ hash哈希：
     hset profile career "Programmer"
     ```
     ![WX20190226-162949@2x](./images/WX20190226-162949@2x.png)
-1. 其他情况下采用hashtable实现。
+2. 其他情况下采用hashtable实现。
 
-字典中包含2个hashtable，通常其中一个是有值的，在扩容的时候需要分配新的hashtable，然后渐进式搬迁，一个hashtable用于存储旧值，一个用于存储新值。搬迁结束后，旧的hashtable会被删除。   
+字典中包含2个hashtable，通常其中一个是有值的，在扩容的时候需要分配新的hashtable，然后渐进式搬迁，一个hashtable用于存储旧值，一个用于存储新值。搬迁结束后，旧的hashtable会被删除。 
+![dict](./images/WX20191007-010740@2x.png)  
 ```c
 struct dict {
     ...
@@ -539,12 +555,7 @@ struct dictEntry {
 }
 ```
 字典基于二维结构设计，其中第一维是数组，第二维是链表。数组中存储的是第二维链表中第一个元素的指针。  
-
-关于字典的扩容：  
-正常情况下，当hash表中元素的个数等于第一维数组的长度时，就会开始扩容，扩容的新数组是原数组大小的2倍。不过如果Redis正在做bgsave，为了减少内存页的过多分离 (Copy On Write)，Redis尽量不去扩容 (dict_can_resize)，但是如果hash表已经非常满了，元素的个数已经达到了第一维数组长度的5倍 (dict_force_resize_ratio)，说明hash表已经过于拥挤了，这个时候就会强制扩容。
-
-关于字典的缩容：   
-当 hash 表因为元素的逐渐删除变得越来越稀疏时，Redis 会对 hash 表进行缩容来减少 hash 表的第一维数组空间占用。缩容的条件是元素个数低于数组长度的 10%。缩容不会考虑 Redis 是否正在做 bgsave。
+![dict](./images/WX20191007-011225@2x.png)
 
 Set集合：
 1. 当set集合容纳的元素都是整数并且元素较少的时候，内部采用intset来存储集合元素，它是一种紧凑的数组结构，同时支持16位、32位和64位整数
@@ -588,6 +599,13 @@ SortedSet：
 
 [redis的五大数据类型实现原理](https://www.cnblogs.com/ysocean/p/9102811.html#_label0_1)
 
+### redis有哪些数据结构，分别使用在什么场景？
+字符串（string）、列表（list）、哈希（hash）、集合（sets）、有序集合（sorted sets）
+
+bitmaps、地理空间（geo）、发布订阅（Pub/Sub）
+
+hyperloglog、bloomfilter
+
 ### 知道动态字符串sds的优缺点么？
 优点：
 1. sds结构会直接存储字符串长度，不需要遍历字符串就能得到长度。
@@ -598,10 +616,65 @@ SortedSet：
 缺点：
 1. 基于优点的第二点，如果append的字符串很大，就需要重新分配空间，并且做字符串复制迁移，这个开销非常大。
 
-### redis有哪些数据结构，分别使用在什么场景？
-string、list、hash、sort、sortedset   
-bitmap、geo、Pub/Sub  
-hyperloglog、bloomfilter
+### redis中hashmap是如何扩容的？
+字典的扩容条件：    
+当元素个数和容量（第一维数组的长度）达到1:1，则开始扩容（如果正在执行bgsave、bgaof则不执行，如果达到1:5则强制执行）
+
+关于字典的缩容：   
+当hash表因为元素的逐渐删除变得越来越稀疏时，Redis会对hash表进行缩容来减少hash表的第一维数组空间占用。缩容的条件是元素个数低于数组长度的 10%。缩容不会考虑Redis是否正在做bgsave。
+
+在redis中，扩展或收缩哈希表需要将ht[0]里面的所有键值对rehash到ht[1]里面，但是，这个rehash动作并不是一次性、集中式地完成的，而是分多次、渐进式地完成的。为了避免rehash对服务器性能造成影响，服务器不是一次性将ht[0] 里面的所有键值对全部rehash到ht[1]，而是分多次、渐进式地将ht[0]里面的键值对慢慢地rehash到ht[1]。
+
+rehash流程：
+1. 为ht[1] 分配空间，让字典同时持有ht[0] 和ht[1] 两个哈希表。
+1. 在字典中维持一个索引计数器变量rehashidx，并将它的值设置为0，表示rehash工作正式开始。
+1. 在rehash进行期间，每次对字典执行添加、删除、查找或者更新操作时，程序除了执行指定的操作以外，还会顺带将ht[0]哈希表在rehashidx索引上的所有键值对rehash到ht[1]，当rehash工作完成之后，rehashidx+1。
+1. 随着字典操作的不断执行，最终在某个时间点上，ht[0]的所有键值对都会被rehash至ht[1]，这时程序将rehashidx属性的值设为-1，表示rehash操作已完成。
+
+rehash过程中新增、查询、修改、删除操作如何定向：
+* 新增：新增的元素直接追加到ht[1]
+* 查询、删除、修改：先查询ht[0]，若不存在则到ht[1]查询
+
+由于在rehash时是同时在操作两个ht，所以会使得redis内存使用量瞬间突增。
+
+### 知道hyperloglog么？
+hyperloglog提供了一个集合，可以往集合里添加数据，然后统计集合中元素的个数，和sets有点像，但是hyperloglog是有误差的集合，标准误差是0.81%。数据较少的时候，基本上没误差，但是数据量大的时候，就会有误差。Redis中实现的HyperLogLog，只需要12K内存就能统计2^64个数据。
+
+对于数据量较少的集合直接用sets即可，但是对于数据量数千万数亿的集合，而且对准确率要求不是很严格的，hyperloglog就很合适，例如计算一些日活、网站访问量等。
+
+```bash
+$ pfadd codehole user1
+(integer) 1
+
+$ pfadd codehole user2
+(integer) 1
+
+$ pfcount codehole
+(integer) 2
+```
+
+### 知道bloomfilter么？
+布隆过滤器可用于判断元素是否存在，虽然使用集合或者哈希也能做到，但是在数据量非常大时，例如上千万上亿时，集合和哈希的内存占用会非常高。但是采用布隆过滤器可以使用较小的空间来达到这种目的，但是有一定的误差。
+
+布隆过滤器说存在的值，可能并不存在；说不存在的值，就一定是不存在。
+
+要使用布隆过滤器，redis需要4.0以上，通过添加布隆过滤器插件使用
+```bash
+redis> bf.add codehole user1
+(integer) 1
+
+$ bf.add codehole user2
+(integer) 1
+
+$ bf.exists codehole user1
+(integer) 1
+```
+
+采用`bf.reserve`可以修改误判率，误判率越低，占用的空间越大。
+```bash
+# key error_rate initial_size
+redis> bf.reserve codehole 0.001 5000
+```
 
 ### redis 内存淘汰机制
 
