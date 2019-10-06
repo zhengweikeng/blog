@@ -567,7 +567,7 @@ Set集合：
     }
     ```
     ![intset](./images/WX20190226-164057@2x.png)
-2. 当set集合存储的不是整数时，采用了hash结构进行存储，只是里面的value都是NULL，其他特性和字典一模一样。
+2. 当set集合存储的不是整数时，采用了字典结构（hashtable）进行存储，只是里面的value都是NULL，其他特性和字典一模一样。
 
 SortedSet：
 1. 采用dict字典存储value和score值的映射关系
@@ -597,7 +597,8 @@ SortedSet：
     ```
     ![skiplist](./images/WX20190226-153702@2x.png)
 
-[redis的五大数据类型实现原理](https://www.cnblogs.com/ysocean/p/9102811.html#_label0_1)
+[redis的五大数据类型实现原理](https://www.cnblogs.com/ysocean/p/9102811.html#_label0_1)  
+[redis-zset内部实现](https://zsr.github.io/2017/07/03/redis-zset%E5%86%85%E9%83%A8%E5%AE%9E%E7%8E%B0/)
 
 ### redis有哪些数据结构，分别使用在什么场景？
 字符串（string）、列表（list）、哈希（hash）、集合（sets）、有序集合（sorted sets）
