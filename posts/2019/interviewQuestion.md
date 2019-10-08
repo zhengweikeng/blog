@@ -680,13 +680,27 @@ redis> bf.reserve codehole 0.001 5000
 当redis内存超出物理内存限制，机器会开始使用虚拟内存，也就是挪用磁盘的存储空间，会导致内存和磁盘频繁交换，导致redis性能急剧下降。为了避免这种情况发生，redis提供了一个最大内存（maxmemory）的配置，当达到这个最大值，则会开始根据选择的策略清理key。
 
 * noeviction，默认策略，不清除key，当客户端发送写操作（set,lpush等）直接返回错误，读取和删除操作则允许。这种方式可以保证数据不丢失，但是无法写操作可能会让线上的操作无继续进行。
-* volatile-lru，根据lru策略，删除设置了过期时间的key，即优先删除最少被使用的并设置了过期时间的key。
-* allkeys-lru，根据lru策略，删除所有key，即优先删除最少被使用的任意key
+* volatile-lru，根据LRU策略，删除设置了过期时间的key，即优先删除最少被使用的并设置了过期时间的key。
+* allkeys-lru，根据LRU策略，删除所有key，即优先删除最少被使用的任意key
 * volatile-random，在设置了过期时间的key中随机选择删除。
 * allkeys-random，在所有key中随机选择一个删除。
 * volatile-ttl，在设置了过期时间的key中选择剩余时间最小的key进行删除。
+* volatile-lfu，是redis4.0新增的淘汰策略，根据LFU策略，删除设置了过期时间的key，即优先删除访问频次最少的并设置了过期时间的key。
+* allkeys-lfu，是redis4.0新增的淘汰策略，根据LFU策略，删除所有key，即优先删除访问频次最少的任意Key。
 
 如果redis只是被用来做缓存，那么最好使用`allkey-xx`的策略，这样任何key都能被清除。如果你还使用了redis的持久化功能，那么就应该使用`volatile-xx`的策略，这样没有设置过期时间的key就不会被清除了。
+
+### redis的LRU算法和LFU算法
+
+传统的LRU（Latest Recently Used）算法需要一个链表，链表中的数据按照一定顺序排列，被访问到的数据会被移动到队首，每次清理数据的时候，就会清理队尾的数据，因为队尾的数据就是比较少被访问的数据。
+
+但是redis并没有采用这种方式来实现它的LRU功能，而是实现了一个近似的LRU算法，它为每个key增加了一个额外的24bit的字段，用于记录最后一次被访问到的时间。
+
+一旦客户端放了写操作，redis发现内存占用已经达到maxmemeory，就会开始进行缓存淘汰，如果淘汰策略是LRU的，那么会随机挑选出5（默认值，通过maxmemory-samples配置）个Key，选择这5个key中最旧的一个key进行删除，如果还是超出maxmemory，那么就继续采样删除直到内存低于maxmemory。
+
+采样数据越大，近似LRU算法就会越接近严格的LRU算法。redis3.0后改善了它的近似LRU算法，引入一个淘汰池（pool），其实就是个数组（大小为16），按照空闲时间排序，第一次执行LRU算法时，由于池子为空，于是5个Key都会被加入池中，下一次执行LRU算法，如果池子不满，并且key的空闲时间大于池里最小的那个时，就加入池中，当池子满了，就会从池中挑选空闲时间最大的那个删除。
+
+在redis4.0中，引入一个新的淘汰策略，即LFU（Latest Frequently Used），核心思想就是根据Key最近被访问的频率进行淘汰，访问频数最少的key优先淘汰。LRU算法有一个缺点，就是某个key如果很久没被访问，突然被访问了一次，那么就会被认为是热key了，也不会被淘汰，而有些key将来可能被访问的就被淘汰了。
 
 ### redis是如何清理过期key的？
 
@@ -836,21 +850,48 @@ var redlock = new Redlock(
 ### Redis 单线程如何处理那么多的并发客户端连接？
 虽然redis是单线程，但是它基于异步非阻塞IO，让线程在进行IO操作的时候，不会被阻塞。其他请求都可以进行多路复用，复用同一个线程来处理任务。
 
-### 如何实现持久化
-1. RDB快照，会不断记录某一瞬间的数据，是一种全量备份
-2. AOF日志，是一种增量备份。
+### redis如何实现持久化？
+1. RDB快照，会不断记录某一瞬间的数据，最终生成数据文件保存在磁盘中，是一种全量备份。这种数据文件非常适合做冷备。
 
-bgsave做镜像全量持久化，aof做增量持久化。因为bgsave会耗费较长时间，不够实时，在停机的时候会导致大量丢失数据，所以需要aof来配合使用。在redis实例重启时，优先使用aof来恢复内存的状态，如果没有aof日志，就会使用rdb文件来恢复。
+   1. 通常是使用bgsave的方式进行快照备份，即redis会fork一个子进程，让子进程来负责RDB持久化，对redis主进程的影响会非常小，不影响其性能。
 
-[redis持久化](https://github.com/zhengweikeng/blog/blob/master/posts/2018/redis/%E6%8C%81%E4%B9%85%E5%8C%96.md)   
-[redis持久化](https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/redis-persistence.md)
+   2. 通过快照的方式恢复数据的速度会非常快。
 
-### bgsave的原理
-fork和cow。
+   3. 一般来说，生成快照的时间会设置成5分钟甚至更长的时间，那也就是说在这5分钟内宕机的话，这5分钟的数据有可能会丢失。
 
-fork是指redis通过创建子进程来进行bgsave操作，cow指的是copy on write，子进程创建后，父子进程共享数据段，父进程继续提供读写服务，写脏的页面数据会逐渐和子进程分离开来。
+   4. 为了提高机器复制的效率，linux机器在fork子进程的时候会采用COW（Copy On Write，即写时复制）技术，这是一种推迟甚至免除复制的技术。内核此时并不复制整个进程地址空间，而是让父进程和子进程共享同一个拷贝。只有在需要写入的时候，数据才会被复制，从而使各个进程拥有各自的拷贝。也就是说，资源的复制只有在需要写入的时候才进行，在此之前，只是以只读方式共享。通过这种技术，使得子进程的数据不会变化，可以不断的进行持久化，因为数据不会变化，因此才有了快照的说法。
+
+   5. ```c++
+      // 在开始的两个语句后，str1和str2存放数据的地址是一样的
+      string str1 = "hello world";  
+      string str2 = str1;  
+      // 在修改内容后，str1的地址发生了变化，而str2的地址还是原来的,这就是C++中的COW技术的应用;
+      str1[1]='q';  
+      str2[1]='w';  
+      ```
+
+2. AOF日志，是一种增量备份。每次写日志都是把对redis的写操作写入日志，数据恢复的时候，只需要按顺序回放日志里的操作即可。
+
+   1. 随着时间的推移，AOF日志会越来越大，如果实力宕机重启，重放整个AOF日志会非常耗时，导致redis不可用，因此需要对AOF日志进行瘦身。
+   2. 通过AOF重写，可对日志进行瘦身，例如可以合并一些指令，如连续的set，可以取最后一次set写入日志。redis本身根据配置的信息（如AOF日志多大的时候）会自动进行日志重写，我们也可以定时执行bgrewriteaof指令来进行重写，它会开辟一个子进程，如果此时有RDB快照正在执行，会先暂停重写，如果有其他子进程在重写日志，则会报错。
+   3. 一般来说，操作系统为了提高写文件的效率，并不是讲数据直接写入到文件中，而是写入到一个缓存中，再由系统刷回磁盘，这个操作为fsync操作。我们也可以配置告诉系统不写入缓存而是直接fsync到磁盘，但是fsync是个磁盘IO操作，会很慢，如果采用这种方式，redis的性能会得不到保证。
+   4. 配置aof策略，always（立马同步到磁盘中），everysec（缓冲区的数据会每秒同步到硬盘），no（由操作系统来决定何时写入硬盘）。
+
+通常来说，我们做备份的时候会在从备份节点上进行，备份节点没有请求的压力，系统资源也比较充沛。如果一旦出现网络分区，会导致数据不一致，此时如果主库还宕机了，就会导致数据丢失，因此要做好监控，可以再增加一个备份节点，减少网络分区的概率。
+
+另外还会同时开启两种持久化机制，一旦AOF日志损坏无法恢复时，还可以借由快照文件快速恢复。
+
+在redis4.0时，有了一种新的持久话方式，混合持久化。持久化文件中包含RDB文件和AOF日志，当进行持久化的时候，将那一瞬间的数据写入该文件中，并在持久化结束后，将这段时间的操作，作为AOF日志写入同一个日志中。这样在进行数据恢复的时候，先通过RDB快照恢复，再通过AOF日志进行增量恢复。
+
+### 既然有持久化技术，为什么redis不能做专门的数据库存储？
+
+1. 首先redis是基于内存的数据库，内存的空间比起磁盘的空间小很多量级，从这一点已经不适合做持久化数据库。
+2. redis的持久化技术无论是RDB快照还是AOF日志，为了性能在保存频率上做了牺牲，那必然会有丢失数据的可能，这样不适合做持久化数据库。
+3. redis的查询功能还并不是很丰富，数据库需要支持的查询会比较复杂，如条件查询。
+4. 事务上，redis的事务非常简单，甚至不能说是事务，这一点也令它不适合做持久化数据库。
 
 ### 主从间的同步机制
+
 [主从复制](https://segmentfault.com/a/1190000015956556)  
 [主从同步](https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/redis-master-slave.md)
 
@@ -885,24 +926,50 @@ Redis集群没有使用一致性hash,而是引入了哈希槽的概念，Redis�
 [如何实现redis的高可用和高并发](https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/how-to-ensure-high-concurrency-and-high-availability-of-redis.md)
 
 ### Redis如何使用事务？有什么缺点？
-[Redis的事务功能详解](https://www.cnblogs.com/kyrin/p/5967620.html)
+
+redis为了提供更好的性能，只提供了基础的事务功能。在redis中使用事务需要用到如下几个指令：watch、multi、exec、discard、unwatch。
+
+multi用于开启一个事务，之后就会将待执行的命令添加到队列，一旦执行exec，则会将队列中的命令按照添加进去的顺序逐个执行，如果想要放弃该事务可以执行discard。
+
+watch是用来监听某个key，它需要在multi之前执行，在后续的命令中如果有修改这个key的命令，那么一旦其他客户端修改了该key，那么本客户端在执行exec的时候就会报错，这就是redis的CAS（Compare And Swap）功能的实现。
+
+```shell
+redis> watch salary
+ok
+redis> get salary
+"10000"
+redis> multi
+ok
+redis> set salary 15000 (另一个客户端修改了该key)
+QUEUED
+redis> exec
+(nil)
+```
+
+需要注意的是，事务中的命令并不具备原子性，所谓原子性就需要所有命令要么全部成功，要么全部失败，不能说有一部分成功了有一部分失败了。但是redis的事务过程中，如果有命令失败了，成功执行了的命令是不会被回滚的。
+
+```sh
+redis> multi
+ok
+redis> set test a
+QUEUED
+redis> lpush test b
+QUEUED
+redis> set hello world
+redis> exec
+1) OK
+2) (error) WRONGTYPE Operation against a key holding the wrong kind of value
+3) OK
+redis> get test
+"a"
+redis> get hello
+"world"
+```
 
 ### 为什么 Redis 的事务不能支持回滚？
 1. 首先redis执行失败，一般都是命令的使用方式错误，例如对一个字符串做了incr操作。而这些错误应该在开发阶段就应该能够发现，一般不会出现在生产环境。
 2. 首先redis和大部分数据库（如mysql）不一样，redis是先执行指令再写日志，只有指令执行成功了才会写日志。如果要支持回滚，那么事务过程中，成功的指令写了日志，失败的又没有写日志，那么就得标明哪些指令需要回滚，这样在日志传到备库时才能进行恢复。而这些都增加了redis事务执行的复杂性。
 3. 正因为在回滚上做了妥协，才提供了更好的性能。
-
-### 如何使用redis进行CAS修改缓存的值
-```
-WATCH myKey
-val = GET myKey
-val = val * 2
-
-MULTI
-SET myKey val
-EXEC
-```
-WATCH一个key后，如果有指令修改了key，不论是watch所在的客户端还是其他客户端，都会导致事务执行失败。
 
 ### Redis 常见的性能问题都有哪些？如何解决？
 1. Master写内存快照，save命令调度rdbSave函数，会阻塞主线程的工作，当快照比较大时对性能影响是非常大的，会间断性暂停服务，所以Master最好不要写内存快照。
