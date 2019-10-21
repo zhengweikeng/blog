@@ -1126,7 +1126,7 @@ rabbitmq无论是哪种集群方案，都有其弊端，不能算真正的分布
 
 对于Kafka来说，它就是纯天然支持分布式的，其模型如下：
 
-![kafka](/Users/zhengweikeng/work_space/projects/blog/posts/2019/images/WX20191010-193609@2x.png)
+![kafka](./images/WX20191010-193609@2x.png)
 
 如图是单个topic的分布式结构图，一个topic的不同分区分布在不同的机器上，每个机器负责一个分区，也就是一个机器节点只需要负责一部分数据。这些机器同时会有自己的副本机器节点，leader节点会将数据都同步到副本上。
 
