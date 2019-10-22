@@ -148,14 +148,20 @@
     - [聊聊负载均衡架构](#%e8%81%8a%e8%81%8a%e8%b4%9f%e8%bd%bd%e5%9d%87%e8%a1%a1%e6%9e%b6%e6%9e%84)
     - [微信扫码登录的原理](#%e5%be%ae%e4%bf%a1%e6%89%ab%e7%a0%81%e7%99%bb%e5%bd%95%e7%9a%84%e5%8e%9f%e7%90%86)
 - [语言](#%e8%af%ad%e8%a8%80)
-  - [golang](#golang)
-    - [如何实现CAS。](#%e5%a6%82%e4%bd%95%e5%ae%9e%e7%8e%b0cas)
+  - [Golang](#golang)
+    - [make和new的区别](#make%e5%92%8cnew%e7%9a%84%e5%8c%ba%e5%88%ab)
+    - [golang中的参数传递是深复制还是浅复制？](#golang%e4%b8%ad%e7%9a%84%e5%8f%82%e6%95%b0%e4%bc%a0%e9%80%92%e6%98%af%e6%b7%b1%e5%a4%8d%e5%88%b6%e8%bf%98%e6%98%af%e6%b5%85%e5%a4%8d%e5%88%b6)
+    - [结构体可以比较么？](#%e7%bb%93%e6%9e%84%e4%bd%93%e5%8f%af%e4%bb%a5%e6%af%94%e8%be%83%e4%b9%88)
+    - [Slice的底层原理是什么？](#slice%e7%9a%84%e5%ba%95%e5%b1%82%e5%8e%9f%e7%90%86%e6%98%af%e4%bb%80%e4%b9%88)
+    - [有没有可能多个slice切片引用同一个底层数组，有的话，需要注意什么？](#%e6%9c%89%e6%b2%a1%e6%9c%89%e5%8f%af%e8%83%bd%e5%a4%9a%e4%b8%aaslice%e5%88%87%e7%89%87%e5%bc%95%e7%94%a8%e5%90%8c%e4%b8%80%e4%b8%aa%e5%ba%95%e5%b1%82%e6%95%b0%e7%bb%84%e6%9c%89%e7%9a%84%e8%af%9d%e9%9c%80%e8%a6%81%e6%b3%a8%e6%84%8f%e4%bb%80%e4%b9%88)
+    - [golang的map是如何实现的，以及如何实现扩容的？](#golang%e7%9a%84map%e6%98%af%e5%a6%82%e4%bd%95%e5%ae%9e%e7%8e%b0%e7%9a%84%e4%bb%a5%e5%8f%8a%e5%a6%82%e4%bd%95%e5%ae%9e%e7%8e%b0%e6%89%a9%e5%ae%b9%e7%9a%84)
+    - [说说channel的实现原理？](#%e8%af%b4%e8%af%b4channel%e7%9a%84%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86)
     - [关于golang for-range 的坑](#%e5%85%b3%e4%ba%8egolang-for-range-%e7%9a%84%e5%9d%91)
     - [goroutine 是怎么调度的？](#goroutine-%e6%98%af%e6%80%8e%e4%b9%88%e8%b0%83%e5%ba%a6%e7%9a%84)
-    - [golang的gc算法](#golang%e7%9a%84gc%e7%ae%97%e6%b3%95)
-    - [Golang 里的逃逸分析是什么？怎么避免内存逃逸？](#golang-%e9%87%8c%e7%9a%84%e9%80%83%e9%80%b8%e5%88%86%e6%9e%90%e6%98%af%e4%bb%80%e4%b9%88%e6%80%8e%e4%b9%88%e9%81%bf%e5%85%8d%e5%86%85%e5%ad%98%e9%80%83%e9%80%b8)
-    - [什么是条件变量？](#%e4%bb%80%e4%b9%88%e6%98%af%e6%9d%a1%e4%bb%b6%e5%8f%98%e9%87%8f)
-    - [为什么先要锁定条件变量的基于的互斥锁，才能调用它的wait方法？](#%e4%b8%ba%e4%bb%80%e4%b9%88%e5%85%88%e8%a6%81%e9%94%81%e5%ae%9a%e6%9d%a1%e4%bb%b6%e5%8f%98%e9%87%8f%e7%9a%84%e5%9f%ba%e4%ba%8e%e7%9a%84%e4%ba%92%e6%96%a5%e9%94%81%e6%89%8d%e8%83%bd%e8%b0%83%e7%94%a8%e5%ae%83%e7%9a%84wait%e6%96%b9%e6%b3%95)
+    - [说说golang的gc算法](#%e8%af%b4%e8%af%b4golang%e7%9a%84gc%e7%ae%97%e6%b3%95)
+    - [了解golang的逃逸分析么？有什么作用？](#%e4%ba%86%e8%a7%a3golang%e7%9a%84%e9%80%83%e9%80%b8%e5%88%86%e6%9e%90%e4%b9%88%e6%9c%89%e4%bb%80%e4%b9%88%e4%bd%9c%e7%94%a8)
+    - [go什么情况下会发生内存泄漏？](#go%e4%bb%80%e4%b9%88%e6%83%85%e5%86%b5%e4%b8%8b%e4%bc%9a%e5%8f%91%e7%94%9f%e5%86%85%e5%ad%98%e6%b3%84%e6%bc%8f)
+    - [怎么实现协程完美退出？](#%e6%80%8e%e4%b9%88%e5%ae%9e%e7%8e%b0%e5%8d%8f%e7%a8%8b%e5%ae%8c%e7%be%8e%e9%80%80%e5%87%ba)
   - [node.js](#nodejs)
     - [阻塞和非阻塞的区别和优缺点。同步和异步的区别和优缺点](#%e9%98%bb%e5%a1%9e%e5%92%8c%e9%9d%9e%e9%98%bb%e5%a1%9e%e7%9a%84%e5%8c%ba%e5%88%ab%e5%92%8c%e4%bc%98%e7%bc%ba%e7%82%b9%e5%90%8c%e6%ad%a5%e5%92%8c%e5%bc%82%e6%ad%a5%e7%9a%84%e5%8c%ba%e5%88%ab%e5%92%8c%e4%bc%98%e7%bc%ba%e7%82%b9)
     - [异步IO模型和事件循环机制](#%e5%bc%82%e6%ad%a5io%e6%a8%a1%e5%9e%8b%e5%92%8c%e4%ba%8b%e4%bb%b6%e5%be%aa%e7%8e%af%e6%9c%ba%e5%88%b6)
@@ -1985,11 +1991,106 @@ https://login.weixin.qq.com/l/Ibe_XwoI3g==
 
 # 语言
 
-## golang
-### 如何实现CAS。
-参考sync.Once的实现。
+## Golang
+
+### make和new的区别
+
+make用于内建类型（只能用于创建map、slice 和channel）的内存分配。并且返回一个有初始值(非零)的T类型，而不是*T。
+
+new用于各种类型的内存分配。new(T)分配了零值填充的T类型的内存空间，并且返回其地址，即一个T类型的值。用Go的术语说，它返回了一个指针，指向新分配的类型T的零值。
+
+### golang中的参数传递是深复制还是浅复制？
+
+golang中的复制时浅拷贝，如果拷贝的类型是引用类型，则会将其地址拷贝过去。如果拷贝的类型是值类型，那么还会拷贝一份原来的值，这样拷贝过去后便不会影响原来的值。
+
+在go中，分为值类型和引用类型
+
+1. 值类型除了基本数据类型（各种int和uint、各种float、string、complex、rune、byte、bool），还有数组、结构体、函数、方法、接口
+2. 引用类型只有三种，分别是切片slice、字典map、管道channel。
+
+那么函数传参的时候，会有如下几种情况：
+
+1. 如果是值类型，会将实参的值拷贝作为函数的形参，因此在函数中对参数进行改变时，不会影响到原来的值。
+2. 如果是引用类型在传参的时候，会将参数的内存地址拷贝一份传给函数，因此在函数中改变参数也会影响到实参。
+3. 如果函数的参数是一个指针类型的话，那么指针变量传入的时候，会将参数的内存地址拷贝一份，传入函数，因此在函数中对参数的变化，也就影响到了实参了。
+
+### 结构体可以比较么？
+
+相同类型的结构体可以相互比较，比较的时候会逐个比较结构体中的值是否相同。
+
+```go
+type User struct {
+		Name string
+}
+func main() {
+    u1 := User{"a"}
+    u2 := User{"a"}
+	  u3 := User{"b"}
+    fmt.Println(u1 == u2, u1 == u3) // true, false
+}
+```
+
+### Slice的底层原理是什么？
+
+切片的底层是一个数组，切片其实是对数组某个连续片段的引用。切片的长度说明能看到的这个数组多少个元素，而切片的容量则说明了能看到的数组的最大长度。在进行切片操作的时候，也只是这个数组的可见窗口的向右移动。
+
+```go
+var s1 = []int{1,2,3,4,5,6,7,8,9}
+s2 := s1[3:6]
+fmt.Println(len(s2), cap(s2)) // 3, 6
+fmt.Println(s2) // 4,5,6
+```
+
+s1初始声明时，长度和容量都是9。经过切片操作赋值给s2后，s2只能看到[3,6)的元素，也就是[4,5,6]。因此s2长度为3。长度为此时能看到的数组的最大长度，也就是s1中[3,8]的元素，总共6个，因此s2的容量为6。
+
+当切片无法容纳更多元素，则需要扩容，扩容的时候会生成一个新的底层数组，数组容量是一般是当前切片容量的2倍。然后将原数组的内容全部拷贝过去，并且产生了新的切片。正因为如此，就的切片和底层数组是不会受影响的。
+
+而关于切片的append功能：
+
+1. 在不需要扩容时，append只是返回了指向原底层数组的新切片
+2. 在需要扩容时，append返回了指向新底层数组的新切片
+
+### 有没有可能多个slice切片引用同一个底层数组，有的话，需要注意什么？
+
+有可能。
+
+```go
+s1 := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+s2 := s1[3:6]
+fmt.Println(len(s2), cap(s2)) // 3, 6
+fmt.Println(s2)               // 4,5,6
+
+s3 := s1[4:7]
+fmt.Println(s3) // 5,6,7
+s3[0] = 10
+fmt.Println(s2) // 4,10,6
+fmt.Println(s3) // 10,6,7
+
+s1[5] = 11
+fmt.Println(s2) // 4,10,11
+fmt.Println(s3) // 10,11,7
+```
+
+代码中s1,s2,s3都是引用同一个底层数组，因此任何一个切片对底层数组的修改，都会导致其他切片受到影响。
+
+因此平时在对切片操作的时候需要注意这种情况，尤其是作为参数传递的时候，切片是引用类型，在函数中对切片的修改，都会导致函数外的切片也受到影响。
+
+### golang的map是如何实现的，以及如何实现扩容的？
+
+golang中map的实现采用的是hashtable+链表的方式，即事先声明一个数组，而数组的每一项都是一个链表的数据结构。将key进行hash后得到一个整数下标，将对应的value放置在对应数组位置下的链表中。
+
+map扩容的时候，会声明两个hashtable，做数据迁移，当然不是一下子迁移所有数据，而是只迁移访问到的数据到新的数组中。
+
+### 说说channel的实现原理？
+
+channel底层采用的是环形链表实现。
+
+在给channel发送一个元素的时候，是在链表的尾部插入一个元素，接收元素的时候是在链表的头部移除一个元素，即先进先出，所以缓冲channel就是一个链表实现的队列。
+
+具体的可以参考这篇文章，解释的挺清楚的： [Golang-Channel原理解析](https://blog.csdn.net/u010853261/article/details/85231944)
 
 ### 关于golang for-range 的坑
+
 ```go
 package main
 
@@ -2041,6 +2142,7 @@ map[1]=1
 [go语言坑之for range](https://studygolang.com/articles/9701)
 
 ### goroutine 是怎么调度的？
+
 **进程**  
 cpu在切换程序的时候，如果不保存上一个程序的状态（也就是我们常说的context--上下文），直接切换下一个程序，就会丢失上一个程序的一系列状态，于是引入了进程这个概念，用以划分好程序运行时所需要的资源。因此进程就是一个程序运行时候的所需要的基本资源单位（也可以说是程序运行的一个实体）。
 
@@ -2071,20 +2173,30 @@ cpuNum := runtime.NumCPU()
 runtime.GOMAXPROCS(cpuNum)
 ```
 
-### golang的gc算法
+### 说说golang的gc算法
 
-### Golang 里的逃逸分析是什么？怎么避免内存逃逸？
+### 了解golang的逃逸分析么？有什么作用？
 
-### 什么是条件变量？
-[条件变量](https://github.com/zhengweikeng/blog/blob/master/posts/2019/golang/Golang%E4%B8%AD%E7%9A%84%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F.md)
+简单来说，就是go的编译器会在函数返回后，判断变量是否还会在外部被引用，如果还被引用则将其放在堆内存中，否则放在栈内存中。
 
-### 为什么先要锁定条件变量的基于的互斥锁，才能调用它的wait方法？
-[Wait的本质和为何Wait前需要加锁](https://github.com/zhengweikeng/blog/blob/master/posts/2019/golang/Golang%E4%B8%AD%E7%9A%84%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F.md#wait%E7%9A%84%E6%9C%AC%E8%B4%A8%E5%92%8C%E4%B8%BA%E4%BD%95wait%E5%89%8D%E9%9C%80%E8%A6%81%E5%8A%A0%E9%94%81)
+栈内存会自动清洗清理，而堆不会，需要频繁的进行GC，而频繁的GC会造成较大的系统开销。通过逃逸分析，将那些不需要分配到堆上的变量都分配到栈上，一方面减轻了堆内存的分配，也减轻了GC的压力，提高程序的运行速度。
+
+参考这篇文章： [Go变量逃逸分析](https://www.cnblogs.com/itbsl/p/10476674.html)
+
+### go什么情况下会发生内存泄漏？
+
+1. goroutine没有释放，在goroutine中分配的对象也就无法被释放，导致内存泄露。其本质就是goroutine中的channel被阻塞，导致无法继续向下运行，导致此goroutine关联的内存都无法释放，进一步造成内存泄露。
+2. 全局变量挂住了本该被释放的对象，导致其无法释放
+
+可以在代码中引入 `net/http/pprof`，浏览器中访问`ip:port/debug/pprof`
+
+[实战Go内存泄露](https://studygolang.com/articles/20529)
+
+### 怎么实现协程完美退出？
+
+[Golang并发模型：并发协程的优雅退出](https://blog.csdn.net/m0_43499523/article/details/85850178)
 
 ## node.js
-[node-interview-questions](https://github.com/jimuyouyou/node-interview-questions)   
-[如何通过饿了么Node.js面试](https://elemefe.github.io/node-interview/#/sections/zh-cn/)
-
 ### 阻塞和非阻塞的区别和优缺点。同步和异步的区别和优缺点
 [对异步非阻塞的理解](https://www.cnblogs.com/-900401/p/4015048.html)  
 [深入了解几种IO模型（阻塞非阻塞，同步异步）](https://blog.csdn.net/zk3326312/article/details/79400805)
