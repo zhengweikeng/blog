@@ -2039,6 +2039,9 @@ zookeeper常用语如下场景：
 [讲讲亿级PV的负载均衡架构](https://zhuanlan.zhihu.com/p/61847281)  
 [lvs+nginx负载均衡](https://www.cnblogs.com/arjenlee/p/9262737.html)
 
+### 监控
+[Prometheus “活学活用”，大牛总结了一套避坑指南](https://mp.weixin.qq.com/s/taRvEegDMyVdlCmkvWaIUw)
+
 ### 微信扫码登录的原理
 
 1. 以浏览器登录为例子，浏览器打开微信登录页面，会出现一个二维码，该二维码中包含一个叫uid的信息，每次刷新这个登录页面，uid都会不同。可以通过一个识别二维码的设备来扫码这个二维码（这样不会去打开它），能得到如下结果：
