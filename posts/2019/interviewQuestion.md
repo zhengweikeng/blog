@@ -474,7 +474,19 @@ mysql根据一致性的强弱，提供了不同的主从复制方式：
 4. 采用IO多路复用来提高IO的效率。
 
 ### redis的底层数据结构了解多少
+
+redis通过哈希表的方式存储key和value，准确说，是存储key和value的地址。
+
+![1cc8eaed5d1ca4e3cdbaa5a3d48dfb5f](./images/1cc8eaed5d1ca4e3cdbaa5a3d48dfb5f.jpg)
+
+当数据量大时，会有哈希冲突的风险。redis采用哈希链表解决，即在一个哈希桶下面，用链表将数据串联起来。这就有链表遍历的风险，需要逐个遍历链表直到找到元素。
+
+![8ac4cc6cf94968a502161f85d072e428](./images/8ac4cc6cf94968a502161f85d072e428.jpg)
+
+redis为了避免链式哈希导致的查询缓慢，通过rehash的方式进行优化，即重新分配一个更大的哈希表，将旧的元素迁移迁移过去，使得哈希链表不至于过长，rehash的机制参考后面文档。
+
 最上层统一的头部
+
 ```c
 struct RedisObject {
     int4 type; // 4bits，记录不同数据类型
@@ -676,7 +688,10 @@ rehash流程：
 1. 在rehash进行期间，每次对字典执行添加、删除、查找或者更新操作时，程序除了执行指定的操作以外，还会顺带将ht[0]哈希表在rehashidx索引上的所有键值对rehash到ht[1]，当rehash工作完成之后，rehashidx+1。
 1. 随着字典操作的不断执行，最终在某个时间点上，ht[0]的所有键值对都会被rehash至ht[1]，这时程序将rehashidx属性的值设为-1，表示rehash操作已完成。
 
+![73fb212d0b0928d96a0d7d6ayy76da0c](./images/73fb212d0b0928d96a0d7d6ayy76da0c.jpg)
+
 rehash过程中新增、查询、修改、删除操作如何定向：
+
 * 新增：新增的元素直接追加到ht[1]
 * 查询、删除、修改：先查询ht[0]，若不存在则到ht[1]查询
 
