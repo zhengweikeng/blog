@@ -2284,6 +2284,31 @@ channel底层采用的是环形链表实现。
 
 select是和channel一起配合使用的，和switch-case类似，由若干个分支组成。
 
+select的分支分为候选分支（以case开头）和默认分支（以default开头），case中的每一个表达式都只能是channel操作，如channel接收表达式。
+
+```go
+intChannels := [3]chan int{
+	  make(chan int, 1),
+    make(chan int, 1),
+    make(chan int, 1),
+}
+
+index := rand.Intn(3)
+intChannels[index] <- index
+
+select {
+  case <-intChannels[0]:
+  		fmt.Println("The first candidate case is selected.")
+  case <-intChannels[1]:
+  		fmt.Println("The second candidate case is selected.")
+  case <-intChannels[2]:
+  		fmt.Printf("The third candidate case is selected, the element is %d.\n", elem)
+  default: fmt.Println("No candidate case is selected!")
+}
+```
+
+当没有提供default默认分支，此时如果select所有case都没有满足条件时，select会被阻塞。
+
 ### 关于golang for-range 的坑
 
 ```go
