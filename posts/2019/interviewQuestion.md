@@ -252,7 +252,7 @@ binlog文件是mysql数据库server层面的日志文件，用来做数据归档
 
 数据库的写操作会伴随两个日志文件的写入操作，为了保证两个日志文件的逻辑一致，mysql采用了两阶段提交。
 
-![redolog and binlog](/Users/zhengweikeng/work_space/projects/blog/posts/2019/images/WX20191014-115018@2x.png)
+![redolog and binlog](./images/WX20191014-115018@2x.png)
 
 通过这个中间状态（prepare状态），即使在写binlog的时候出现异常（如数据库宕机），恢复后便可以直接丢弃prepare状态的数据，保持和binlog日志一致。
 
