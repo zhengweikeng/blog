@@ -2,6 +2,153 @@
 
 [toc]
 
+## 单一职责原则
+
+SOLID的第一个原则是Single Responsibility Principle（SRP），即单一职责原则。一个类或者模块只负责完成一个职责（或者功能）。
+
+这个原则理解起来比较简单，例如负责交易的模块就不要去负责商品管理的功能。但是也不需要太过绝对的去采用这个原则。
+
+例如一个加密模块，提供了加密和解密的功能，按照单一原则的话，这里应该把加密和解密分别拆开为两个模块。但是很多时候我们的加密和解密是需要依赖同一个秘钥的，拆开了反而使得模块内聚性降低。
+
+## 开闭原则
+
+SOLID的第二个原则是Open Closed Principle（OCP），即开闭原则。软件实体（模块、类、方法等）应该“对扩展开放、对修改关闭”。详细点说，就是当需要添加一个新的功能时，应该是在已有代码基础上来扩展代码（新增模块、类、方法等），而非修改已有代码（修改模块、类、方法等）。
+
+举个例子，假设我们在做一个告警平台，目前支持的功能是当请求的错误数达到指定数值时则发送告警。
+
+```go
+type Alert struct {
+  notification 	Notification
+}
+
+func NewAlert(notification 	Notification) Alert {
+  return Alert{
+    notification: notification,
+  }
+}
+
+func (alert Alert) CheckAndNotify(api string, errorCount int) {
+  if errorCount >= apiRule.GetRule(api).MaxErrorCount(){
+    alert.notification.Nofity(Notification.Level.Error, "...")
+  }
+}
+```
+
+现在如果需要加入一个新的告警规则，当tps达到一定的数值时，则发送告警。我们可能会这么来对原来的函数进行修改：
+
+```go
+func (alert Alert) CheckAndNotify(api string, errorCount int, requestCount int64, duration int64) {
+  if errorCount >= apiRule.GetRule(api).MaxErrorCount(){
+    alert.notification.Nofity(Notification.Level.SEVERE, "...")
+  }
+  
+  tps := requestCount / duration
+  if tps >= apiRule.GetRule(api).MaxTps() {
+    alert.notification.Nofity(Notification.Level.URGENCY, "...")
+  }
+}
+```
+
+通过给函数加参数的方式，功能虽然实现了，但是导致了所有调用过该函数的地方全部都得进行修改，这明显是不合理，尤其是当你的模块是作为开源组件被外部使用时。
+
+因此在你进行代码设计的时候，就应该考虑到未来扩展性和兼容性的问题，未来的改动尽量的去遵循开闭原则，尽量的采用扩展功能的方式，少用修改。接下来看看如果采用开闭原则重新设计这个告警模块，应该怎么写。
+
+```go
+type ApiStatInfo struct {
+  Api 				string
+  ErrorCount 	int
+}
+
+type AlertHandler interface {
+  CheckAndAlert(ApiStatInfo)
+}
+
+type Alert struct {
+  alertHandlers []AlertHandler
+}
+
+func (alert *Alert) AddAlertHandler(h AlertHandler) {
+  alert.alertHandlers = append(alert.alertHandlers, h)
+}
+
+func (alert *Alert) CheckAndNotify(stat ApiStatInfo) {
+  for _, h := range alert.alertHandlers {
+    h.CheckAndAlert(stat)
+  }
+}
+
+type ErrorAlertHandler struct {
+  notification 	Notification
+}
+
+func NewErrorAlertHandler(notification 	Notification) ErrorAlertHandler {
+  return ErrorAlertHandler{
+    notification: notification,
+  }
+}
+
+func (h *ErrorAlertHandler) CheckAndNotify(stat ApiStatInfo) {
+  if stat.ErrorCount >= apiRule.GetRule(api).MaxErrorCount(){
+    h.notification.Nofity(Notification.Level.SEVERE, "...")
+  }
+}
+
+func main() {
+  notification := NewNotification(...) // 此部分省略
+  apiStat := NewApiStat(...) // 此部分省略
+  
+  errAlertHandler := NewErrorAlertHandler(notification)
+  
+  alert := Alert{}
+  alert.AddAlertHandler(errAlertHandler)
+  alert.CheckAndNotify(apiStat)
+}
+```
+
+我们构建了一个AlertHandler接口，包含一个CheckAndNotify方法，用于告警检查和通知。不同规则的告警方式，只需要去实现对应的方法即可。这样我们的Alert告警模块，只管将它拥有的告警处理器进行处理即可。
+
+经过上述重构，我们接下来要添加tps告警的功能便很简单了：
+
+```go
+... // 省去前面的代码
+
+type TpsAlertHandler struct {
+  notification 	Notification
+}
+
+func NewTpsAlertHandler(notification 	Notification) TpsAlertHandler {
+  return TpsAlertHandler{
+    notification: notification,
+  }
+}
+
+func (h *TpsAlertHandler) CheckAndNotify(stat ApiStatInfo) {
+  tps := stat.RuquestCount / stat.Duration
+  if tps >= apiRule.GetRule(api).MaxTpsCount(){
+    h.notification.Nofity(Notification.Level.URGENCY, "...")
+  }
+}
+
+func main() {
+  notification := NewNotification(...) // 此部分省略
+  apiStat := NewApiStat(...) // 此部分省略
+  
+  alertHandler := NewErrorAlertHandler(notification)
+  tpsAlertHandler := NewTpsAlertHandler(notification)
+  
+  alert := Alert{}
+  alert.AddAlertHandler(alertHandler)
+  alert.AddAlertHandler(tpsAlertHandler)
+  alert.CheckAndNotify(apiStat)
+}
+```
+
+可以发现，我们增加一个新的告警规则时（扩展一个告警处理器），对原来的告警是没有任何改动的，也即没有做修改。这样的架构才让我们的模块具备高的扩展性。
+
+## 里式替换
+
+SOLID的第三个原则是Liskov Substitution Principle（LSP），即里式替换原则
+
 ## 依赖反转
 
 SOLID的最后一个原则是Dependency Injection（DI），即依赖注入原则。在认识DI前，先了解下另一个常见的概念，Inversion Of Controll（IOC），即控制反转。
