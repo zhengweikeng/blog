@@ -147,7 +147,66 @@ func main() {
 
 ## 里式替换
 
-SOLID的第三个原则是Liskov Substitution Principle（LSP），即里式替换原则
+SOLID的第三个原则是Liskov Substitution Principle（LSP），即里式替换原则。也就是：子类对象（object of subtype/derived class）能够替换程序（program）中的父类对象（object of base/parent class）出现的任何地方，并且保证原来程序的逻辑行为（behavior）不变及正确性不被破坏。
+
+这里有个重点，就是子类替换父类的对象后，原来父类的逻辑不能有改变。我们知道面向对象的特性中，继承是其中一个特性，但是go没有继承这样的功能，但是可以通过结构体嵌套来实现对被嵌结构体功能的继承。
+
+```go
+type Logger struct{
+  Prefix string
+}
+func (log *Logger) Info(msg ...string) {
+  fmt.Println(log.Prefix, " log INFO:", msg...)
+}
+... // Warn、Error等同理
+
+type RemoteLogger struct {
+  Logger
+  Url string
+}
+func (log *Logger) Info(msg ...string) {
+  fmt.Println(log.Prefix, " log INFO:", msg...)
+  
+  if log.Url == "" {
+    panic("log.url is empty")
+  }
+  httputil.SendRequest(log.Url, ...) 
+}
+```
+
+这里我们构建了一个远程日志模块，结构体嵌套了默认的日志模块，并且重写了Info方法。这里需要关注里面关于`log.Url==""`的判断，这里会导致一个panic，与原先logger的逻辑不一致了，这种是不满足里式替换的。
+
+可以这么修改：
+
+```go
+func (log *Logger) Info(msg ...string) {
+  fmt.Println(log.Prefix, " log INFO:", msg...)
+  
+  go func() {
+    err := httputil.SendRequest(log.Url, ...)   
+    if err != nil {
+      ...
+    }
+  }()
+}
+```
+
+这样修改则满足里式替换。
+
+## 接口隔离原则
+
+SOLID的第四个原则是Interface Segregation Principle（ISP），即接口隔离原则。这个原则就是客户端不应该被强迫依赖它不需要的接口。其中的“客户端”，可以理解为接口的调用者或者使用者。这里接口可以是API接口，也可以是面向对象中的接口。
+
+简单来说，就是在设计模块的时候，如果部分接口只会被部分调用者调用，那么就需要将这部分接口独立出来，单独的给这些调用者使用。
+
+```go
+type TradeOrder interface {
+  func PlaceOrder(Order) error
+  func ChangeOrderPrice(Order,int) error
+}
+```
+
+像上面的交易接口，其中PlaceOrder是下单函数，提供给用户使用。而ChangeOrderPrice是修改价格功能，一般来说是给商家使用，不会开放给用户，因此放在一个接口里面是不合适的。
 
 ## 依赖反转
 
