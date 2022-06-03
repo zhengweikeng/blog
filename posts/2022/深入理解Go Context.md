@@ -738,3 +738,6 @@ func (pc *persistConn) roundTrip(req *transportRequest) (resp *Response, err err
 ```
 
 在这里我们能看到，在roundTrip中使用了大量的管道channel，同时结合for循环+select的方式去监听req.Context()和其他channel的请求，如果上下文先超时了，自然提前返回了错误。
+
+## 总结
+context的源码阅读起来并不难，但是在阅读源码后，除了能够明白其实现的原理外，还能够窥见一些设计巧思，例如不采用fmt.Sprintf如何实现一个context的string方法。这对自己之后的编码也会有一定启发。
