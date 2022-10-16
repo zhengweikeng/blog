@@ -15,13 +15,13 @@ A Context carries a deadline, a cancellation signal, and other values across
 
 翻译过来，Context就是携带了超时时间、取消信号和值的一种结构。
 
-![](./images/WX20220522-224621.png)
+![](../images/WX20220522-224621.png)
 
 如上图所述，举一个我们最常见的web开发为例子。在Go语言中，当客户端的请求进到服务器时，服务器端会开辟一个协程进行处理。有时在处理的过程中，我们还需要创建其他协程来进行其他的并发任务。为了能在多个协程间建立联系，便可以使用context。
 
 在接收到请求后，创建一个context作为根context，当需要创建更多的协程时，则基于这个根context来创建子context，并且将根context的信息携带给子context。同理子context也可以创建更多的自己的子context给后续创建的协程。当其中有一个父协程处理超时，可以通知自己下面的所有子协程，这样这些子协程也不用再继续自己的任务，避免浪费资源和性能。
 
-![WX20220522-230247.png](./images/WX20220522-230247.png)
+![WX20220522-230247.png](../images/WX20220522-230247.png)
 
 从图中可见，根context的第一个子context执行超时了，它后续的所有子context都能接收到context被取消的通知，进而取消自己的context。
 
@@ -310,7 +310,7 @@ func removeChild(parent Context, child canceler) {
 
 上面说道，当一个上下文被取消后，需要取消下面的所有子上下文。除此之外，还需要断开与自己的父上下文的关联，目的是为了避免祖宗节点也取消上下文后重复的向下面的已经取消了的子节点发送取消信号。
 
-![WX20220531-020811@2x.png](./images/WX20220531-020811@2x.png)
+![WX20220531-020811@2x.png](../images/WX20220531-020811@2x.png)
 
 图里，如果ctx2被取消后，只断开了和ctx3的联系，而之后ctx1也取消了，便会导致取消信号也传递到了ctx2。
 

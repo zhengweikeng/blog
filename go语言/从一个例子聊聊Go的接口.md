@@ -162,7 +162,7 @@ func main() {
 ```
 
 将该例子对应到eface结构上的话，大概如下图所示：
-![interface_1.png](./images/interface_1.png)
+![interface_1.png](../images/interface_1.png)
 
 ### iface
 
@@ -219,7 +219,7 @@ func main() {
 ```
 
 将该例子对应到iface结构上的话，大概如下图所示：
-![interface_1.png](./images/interface_2.png)
+![interface_1.png](../images/interface_2.png)
 
 ### iface和eface的案例分析
 
