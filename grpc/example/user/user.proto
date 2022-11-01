@@ -1,0 +1,25 @@
+syntax = "proto3";
+package user;
+
+option go_package = "example/user";
+
+service UserService {
+    rpc queryUsers(UserRequest) returns (UsersResponse) {}; 
+}
+
+message UserRequest {
+    string user_name = 1;
+}
+
+message UsersResponse {
+    int32 code = 1;
+    string msg = 2;
+    repeated User users= 3;
+}
+
+message User {
+    int32 id = 1;
+    string name = 2;
+    int32 age = 3;
+    int32 gender = 4;
+}
