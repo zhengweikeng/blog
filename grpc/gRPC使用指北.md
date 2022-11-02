@@ -188,11 +188,145 @@ example
 注：**关于protoc指令中③、⑤和⑥，读者可以尝试删除后，看看目录的差别和服务端骨架实现的差异。**
 
 ### 2.3 服务端实现
+这一步，我们要来实现proto文件中定义的UserService服务。protoc生成的go语言骨架代码时，会为每个service生成对应的接口，名字为**XXXServer**，其中XXX即为service的名字。
+
+在我们这里即为
+```go
+type UserServiceServer interface {
+	QueryUsers(context.Context, *UserRequest) (*UsersResponse, error)
+}
+```
+
+值得注意的是，对于go语言，生成方法定义中，首个参数会是个context，目的是便于做超时和取消控制。
+
+接下来就来实现该接口，完成我们的业务逻辑，在userservice下创建service.go文件
+
+```go
+package main
+
+import (
+	"context"
+	"errors"
+	pb "example/user"
+	"log"
+	"net"
+
+	"google.golang.org/grpc"
+)
+
+var users = map[string]*pb.User{
+	"Jerry": {
+		Id:     1,
+		Name:   "Jerry",
+		Age:    21,
+		Gender: 1,
+	},
+	"Jack": {
+		Id:     2,
+		Name:   "Jack",
+		Age:    30,
+		Gender: 1,
+	},
+}
+
+type UserService struct{}
+
+func (svc UserService) QueryUsers(ctx context.Context, userReq *pb.UserRequest) (*pb.UsersResponse, error) {
+	u, ok := users[userReq.UserName]
+	if !ok {
+		return nil, errors.New("user not found")
+	}
+
+	resp := &pb.UsersResponse{	
+		Code: 0,
+		Users: []*pb.User{u},
+	}
+
+	return resp, nil
+}
+```
+
+完成上述业务逻辑实现后，便可以实现grpc服务的注册和监听。
+```go
+func main() {
+	s := grpc.NewServer()
+	pb.RegisterUserServiceServer(s, &UserService{}) 
+
+	log.Printf("start listen user service port:%d", 10000)
+
+	ls, err := net.Listen("tcp", "127.0.0.1:10000")
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	if err := s.Serve(ls); err != nil {
+		log.Fatalf("user service serve error:%v", err)
+	}
+}
+```
+
+关键步骤就是`pb.RegisterUserServiceServer()`，通过它将我们业务实现注册到服务中。至此完成了我们服务端的代码实现。
 
 ### 2.4 客户端实现
+客户端的实现也比较简单，如下所示：
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"time"
+
+	pb "example/user"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+func main() {
+	conn, err := grpc.Dial("127.0.0.1:10000", grpc.WithTransportCredentials(insecure.NewCredentials())) ①
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	defer conn.Close()
+
+	userSvcClient := pb.NewUserServiceClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond) 
+	defer cancel()
+
+	userReq := pb.UserRequest{
+		UserName: "Jack",
+	}
+	resp, err := userSvcClient.QueryUsers(ctx, &userReq) ②
+	if err != nil {
+		log.Fatalf("query user fail:%v", err)
+		return
+	}
+
+	log.Printf("%v", resp)
+}
+
+```
+
+* 其中①指定了连接的相关配置，由于我们本地不采用SSL的方式连接服务端，因此需要指定`grpc.WithTransportCredentials(insecure.NewCredentials())`，表明不使用SSL通道。
+* ②调用查询用户方法，将会返回用户信息的响应数据。
+
+至此完成了客户端的开发，接下来便可以启动服务，完成客户端与服务端对话。
 
 ### 2.5 运行
 
+
+首先启动用户服务
+```sh
+$ go run userservice/service.go
+2022/11/02 12:58:24 start listen user service port:10000
+```
+
+接下来则让客户端
 
 ## grpc的通信模式
 ### 一元RPC模式
