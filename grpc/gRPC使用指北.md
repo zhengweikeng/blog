@@ -326,13 +326,107 @@ $ go run userservice/service.go
 2022/11/02 12:58:24 start listen user service port:10000
 ```
 
-接下来则让客户端
+接下来则启动客户端，发起对服务的请求。
 
-## grpc的通信模式
-### 一元RPC模式
-### 服务器端流GRPC模式
-### 客户端流GRPC模式
-### 双向流RPC模式
+```sh
+$ go run userclient/client.go
+```
+
+## 3. grpc的通信模式
+
+通过前两个章节，我们对grpc有了初步的认识，这一节我们将讲述grcp中不同的通信模式。前面提到，grpc因为采用HTTP/2实现的原因，也天然的支持流模式，在本节也将会学习如何使用grpc的流模式。
+
+### 3.1 一元RPC模式
+一元（Unary）rpc模式，也叫简单rpc模式，是我们使用的最广泛的rpc模式。我们之前的案例中便属于这种rpc模式，这里也就不再举例子。
+
+一元模式下，客户端发送单个请求到服务端，服务端也响应单个请求给客户端。这种一来一回的模式非常容易实现，也适用于大多数进程间通信。
+
+### 3.2 服务器端流RPC模式
+服务器端流（server streaming）rpc模式，即客户端发送请求给服务端后，服务端会响应一个序列，这种多个响应组成的序列也被称为**流**。客户端则可以一直读取流中的数据，直到获取到流结束的标志为止。
+
+接下来通过一个例子来了解下这种rpc模式。
+
+创建服务定义如下
+```protobuf
+syntax = "proto3";
+package order;
+
+option go_package = "example/order";
+
+import "google/protobuf/wrappers.proto";
+
+service OrderService {
+    rpc queryOrders(google.protobuf.StringValue) returns (stream Order) {}; 
+}
+
+message Order {
+  int32 id = 1;
+  repeated string goods = 2;
+  float price = 3;
+}
+```
+
+* 首先我们引入了一个protocol buffers的官方库wrappers.proto，它提供了一些常见的message类型，可以帮助我们减少代码量。
+* 重点就是queryOrders方法的返回类型Order处增加了一个stream的描述，用来说明是一个流类型的返回。
+
+同样的用protoc生成桩代码
+```sh
+protoc -I=. -I=<your_google_proto_path>/src \        ⍉ 5h43m master!?
+--go_out=. \
+--go_opt=paths=source_relative \
+--go-grpc_out=. \
+--go-grpc_opt=paths=source_relative \
+--go-grpc_opt=require_unimplemented_servers=false \
+./order/order.proto
+```
+
+接下来看下如何编写服务端骨架代码
+```go
+package main
+
+import (
+	pb "example/order"
+	"log"
+	"net"
+	"strings"
+
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+)
+
+type OrderService struct{}
+
+func (svc OrderService) QueryOrders(search *wrapperspb.StringValue,
+	stream pb.OrderService_QueryOrdersServer) error { ①
+	for _, o := range orderMap {
+		for _, g := range o.Goods {
+			if !strings.Contains(g, search.Value) {
+				continue
+			}
+
+			err := stream.Send(o) ②
+			if err != nil {
+				return err
+			}
+			log.Printf("found order:%v", o)
+			break
+		}
+	}
+
+	return nil
+}
+
+func main() {
+	... // 这里服务注册的实现参考之前的案例
+}
+```
+
+从①中可见，OrderService接口的QueryOrders方法定义不再和之前一样需要context，而是除了请求参数外，还提供了一个流类型的参数，并且返回值也只有error了。
+
+在②中，通过调用流参数stream的send方法，返回给客户端查询到的订单数据。
+
+### 3.3 客户端流GRPC模式
+### 3.4 双向流RPC模式
 
 ## grpc的高阶使用
 ### 负载均衡
