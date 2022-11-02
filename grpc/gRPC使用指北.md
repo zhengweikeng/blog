@@ -91,7 +91,108 @@ thrift也是与grpc类似的rpc框架，由facebook开发，后面捐赠给了ap
 
 ![simple example](../images/example1.jpg)
 
-### 2.1 服务定义
+### 2.1 前置准备
+
+在开始项目前，需要先将环境准备好
+* go，建议1.15以上，即默认开启go module功能
+* protoc，可以参考protocol buffers官网文档进行安装
+* protoc-gen-go，为proto文件编译为go语言需要的插件
+```
+$ go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+```
+* protoc-gen-go-grpc，编译proto文件中的grpc服务的插件
+```
+$ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
+```
+
+我们需要先创建一个example的项目目录，在该目录下面接着创建如下几个目录：
+* userservice目录，用来存放服务端的源码
+* userclient目录，用来存放客户端的源码
+* user目录，用来存放proto文件和生成的go语言桩代码
+
+目录结构如下：
+```
+example
+  -- userservice
+  -- userclient
+  -- user
+```
+
+接下来在example根目录下，执行如下指令，完成go module初始化
+```
+$ go mod init example
+```
+
+### 2.2 服务接口定义
+
+完成以上准备工作后，即可在user目录下创建user.proto文件，用来定义服务的接口，文件内容如下
+
+```protobuf
+syntax = "proto3";
+package user;
+
+option go_package = "example/user";
+
+service UserService {
+    rpc queryUsers(UserRequest) returns (UsersResponse) {}; 
+}
+
+message UserRequest {
+    string user_name = 1;
+}
+
+message UsersResponse {
+    int32 code = 1;
+    string msg = 2;
+    repeated User users= 3;
+}
+
+message User {
+    int32 id = 1;
+    string name = 2;
+    int32 age = 3;
+    int32 gender = 4;
+}
+```
+
+这里我们定义了一个UserService的服务，该服务中包含一个方法queryUsers。同时我们定义了一个请求的结构（UserRequest）、响应的结构（UsersResponse）和一个用户结构（User）。
+
+接下来我们便可以生成桩代码了
+```sh
+protoc -I=. \    ①
+--go_out=. \     ②
+--go_opt=paths=source_relative \    ③
+--go-grpc_out=. \     ④
+--go-grpc_opt=paths=source_relative \    ⑤
+--go-grpc_opt=require_unimplemented_servers=false \    ⑥
+./user/user.proto   
+```
+* ①，-I 用于指定依赖的proto文件所在的路径。如果有依赖其他的proto文件，可以指定多个路径
+* ②，说明桩代码生成的路径，此处配置代表相对当前路径来生成桩代码
+* ③，桩代码生成的一些额外配置，此处说明生成的目录根据proto文件所在的路径生成
+* ④，说明grpc桩代码的生成路径，没有配置的话默认是不会生成grpc中service的桩代码的
+* ⑤，同③，即grpc桩代码生成的路径根据proto文件所在的目录生成
+* ⑥，说明是否需要兼容生成不实现服务端骨架代码的结构
+
+执行后，生成的文件的目录结构如下
+```
+example
+  -- userservice
+  -- userclient
+  -- user
+    -- user_grpc.pb.go
+    -- user.pb.go
+    -- user.pb
+```
+
+注：**关于protoc指令中③、⑤和⑥，读者可以尝试删除后，看看目录的差别和服务端骨架实现的差异。**
+
+### 2.3 服务端实现
+
+### 2.4 客户端实现
+
+### 2.5 运行
+
 
 ## grpc的通信模式
 ### 一元RPC模式
