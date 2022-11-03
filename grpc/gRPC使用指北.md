@@ -543,6 +543,110 @@ log.Printf("update order resp:%v", response)
 ### 3.4 双向流RPC模式
 双向流（Bidirectional）rpc模式，顾名思义就是客户端和服务端均采用流的方式进行通信。这种模式必须由客户端发起，之后则完全基于grpc客户端和服务器端的程序逻辑。
 
+![bidirectional_stream](../images/bidirectional_stream.jpg)
+
+这里以一个处理订单作为例子，客户端调用处理订单方法，服务端接收到请求后，当收到的订单大于一定数量，则会进行发货，返回发货信息。
+
+此处客户端可以不断发送订单信息，服务端也可以通过流的方式不断接收进行处理。
+
+```protobuf
+syntax = "proto3";
+package order;
+
+option go_package = "example/order";
+
+import "google/protobuf/wrappers.proto";
+
+service OrderService {
+    rpc processOrders(stream google.protobuf.Int32Value) returns (stream ShipmentOrder) {};
+}
+
+message ShipmentOrder {
+  int32 order_id = 1;
+  string status = 2;
+}
+```
+
+服务端骨架实现如下：
+```go
+type OrderService struct{}
+func (svc OrderService) ProcessOrders(stream pb.OrderService_ProcessOrdersServer) error {
+	maxBatch := 2
+
+	var shipOrders []*pb.ShipmentOrder
+	for {
+		order_id, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				for _, shipOrder := range shipOrders {
+					stream.Send(shipOrder)
+				}
+				return nil
+			}
+			log.Fatalf("receive order err:[%v]", err)
+			return err
+		}
+
+		shipOrders = append(shipOrders, &pb.ShipmentOrder{
+			OrderId: order_id.Value,
+			Status:  "shipped",
+		})
+		if len(shipOrders) == maxBatch {
+			for _, shipOrder := range shipOrders {
+				stream.Send(shipOrder)
+			}
+			shipOrders = []*pb.ShipmentOrder{}
+		}
+	}
+}
+```
+
+客户端代码如下所示
+```go
+stream, err := client.ProcessOrders(context.Background())
+if err != nil {
+	log.Fatalf("process order fail:%v", err)
+	return
+}
+
+if err := stream.Send(wrapperspb.Int32(1)); err != nil {
+	log.Fatalf("send order fail:%v", err)
+	return
+}
+if err := stream.Send(wrapperspb.Int32(2)); err != nil {
+	log.Fatalf("send order fail:%v", err)
+	return
+}
+if err := stream.Send(wrapperspb.Int32(3)); err != nil {
+	log.Fatalf("send order fail:%v", err)
+	return
+}
+
+ch := make(chan struct{})
+go func() {
+	for {
+		shipOrder, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				close(ch)
+				break
+			}
+			continue
+		}
+		log.Printf("ship order: [%v]\n", shipOrder)
+	}
+}()
+
+if err := stream.CloseSend(); err != nil {
+	log.Fatalf("close stream error:%v", err)
+}
+<-ch
+```
+
+有几点需要关注：
+* 客户端可以并发的读取和写入同一个流
+* 流的操作完全独立，客户端和服务器端可以按照任意顺序进行读取和写入
+
 ## grpc的高阶使用
 ### 负载均衡
 ### 拦截器

@@ -76,4 +76,43 @@ func main() {
 		return
 	}
 	log.Printf("update order resp:%v", response)
+
+	stream3, err := client.ProcessOrders(context.Background())
+	if err != nil {
+		log.Fatalf("process order fail:%v", err)
+		return
+	}
+
+	if err := stream3.Send(wrapperspb.Int32(1)); err != nil {
+		log.Fatalf("send order fail:%v", err)
+		return
+	}
+	if err := stream3.Send(wrapperspb.Int32(2)); err != nil {
+		log.Fatalf("send order fail:%v", err)
+		return
+	}
+	if err := stream3.Send(wrapperspb.Int32(3)); err != nil {
+		log.Fatalf("send order fail:%v", err)
+		return
+	}
+
+	ch := make(chan struct{})
+	go func() {
+		for {
+			shipOrder, err := stream3.Recv()
+			if err != nil {
+				if err == io.EOF {
+					close(ch)
+					break
+				}
+				continue
+			}
+			log.Printf("ship order: [%v]\n", shipOrder)
+		}
+	}()
+
+	if err := stream3.CloseSend(); err != nil {
+		log.Fatalf("close stream error:%v", err)
+	}
+	<-ch
 }

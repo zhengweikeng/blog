@@ -62,6 +62,36 @@ func (svc OrderService) UpdateOrders(stream pb.OrderService_UpdateOrdersServer) 
 	}
 }
 
+func (svc OrderService) ProcessOrders(stream pb.OrderService_ProcessOrdersServer) error {
+	maxBatch := 2
+
+	var shipOrders []*pb.ShipmentOrder
+	for {
+		order_id, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				for _, shipOrder := range shipOrders {
+					stream.Send(shipOrder)
+				}
+				return nil
+			}
+			log.Fatalf("receive order err:[%v]", err)
+			return err
+		}
+
+		shipOrders = append(shipOrders, &pb.ShipmentOrder{
+			OrderId: order_id.Value,
+			Status:  "shipped",
+		})
+		if len(shipOrders) == maxBatch {
+			for _, shipOrder := range shipOrders {
+				stream.Send(shipOrder)
+			}
+			shipOrders = []*pb.ShipmentOrder{}
+		}
+	}
+}
+
 func main() {
 	s := grpc.NewServer()
 

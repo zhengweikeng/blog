@@ -8,7 +8,7 @@ import "google/protobuf/wrappers.proto";
 service OrderService {
     rpc queryOrders(google.protobuf.StringValue) returns (stream Order) {}; 
     rpc updateOrders(stream Order) returns (google.protobuf.StringValue) {};
-    rpc processOrders(stream Order) returns () {};
+    rpc processOrders(stream google.protobuf.Int32Value) returns (stream ShipmentOrder) {};
 }
 
 message Order {
@@ -17,3 +17,7 @@ message Order {
   float price = 3;
 }
 
+message ShipmentOrder {
+  int32 order_id = 1;
+  string status = 2;
+}
