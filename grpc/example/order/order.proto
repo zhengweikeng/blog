@@ -7,6 +7,8 @@ import "google/protobuf/wrappers.proto";
 
 service OrderService {
     rpc queryOrders(google.protobuf.StringValue) returns (stream Order) {}; 
+    rpc updateOrders(stream Order) returns (google.protobuf.StringValue) {};
+    rpc processOrders(stream Order) returns () {};
 }
 
 message Order {

@@ -344,6 +344,8 @@ $ go run userclient/client.go
 ### 3.2 服务器端流RPC模式
 服务器端流（server streaming）rpc模式，即客户端发送请求给服务端后，服务端会响应一个序列，这种多个响应组成的序列也被称为**流**。客户端则可以一直读取流中的数据，直到获取到流结束的标志为止。
 
+![server_stream_rpc](../images/server_stream.jpg)
+
 接下来通过一个例子来了解下这种rpc模式。
 
 创建服务定义如下
@@ -381,6 +383,7 @@ protoc -I=. -I=<your_google_proto_path>/src \        ⍉ 5h43m master!?
 ```
 
 接下来看下如何编写服务端骨架代码
+
 ```go
 package main
 
@@ -423,10 +426,122 @@ func main() {
 
 从①中可见，OrderService接口的QueryOrders方法定义不再和之前一样需要context，而是除了请求参数外，还提供了一个流类型的参数，并且返回值也只有error了。
 
-在②中，通过调用流参数stream的send方法，返回给客户端查询到的订单数据。
+在②中，通过调用流参数stream的send方法，返回给客户端查询到的订单数据。接下来具体看看流模式下客户端如何接收服务端的响应。
+
+```go
+client := pb.NewOrderServiceClient(conn)
+
+ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+defer cancel()
+
+stream, err := client.QueryOrders(ctx, &wrapperspb.StringValue{Value: "iphone"})
+if err != nil {
+	log.Fatalf("query order fail:%v", err)
+	return
+}
+
+for {
+	order, err := stream.Recv()
+	if err != nil {
+		if err == io.EOF {
+			break
+		}
+		log.Fatalf("receive order stream error:%v", err)
+		continue
+	}
+	log.Printf("query order: [%+v]", order)
+}
+```
+
+客户端的实现和一元流的模式还是比较相似的，只是接收服务端响应时，需要循环来处理多个响应，直到接收到流结束的标志。
 
 ### 3.3 客户端流GRPC模式
+客户端流（client streaming）rpc模式，即客户端会发送多个请求给服务端，不再是单个请求。而服务器端则会返回一个响应给客户端。
+
+需要注意的是：服务端不一定需要等到接收到所有客户端的请求后再进行处理，也可以接收到流中的一条或者多条消息后在处理和返回响应。
+
+![client_stream_rpc](../images/client_stream.jpg)
+
+```protobuf
+syntax = "proto3";
+package order;
+
+option go_package = "example/order";
+
+import "google/protobuf/wrappers.proto";
+
+service OrderService {
+    rpc updateOrders(stream Order) returns (google.protobuf.StringValue) {};
+}
+
+message Order {
+  int32 id = 1;
+  repeated string goods = 2;
+  float price = 3;
+}
+```
+
+proto的定义和服务端流类似，把请求参数换成了流类型。接下来看下服务端实现逻辑：
+
+```go
+type OrderService struct{}
+
+func (svc OrderService) UpdateOrders(stream pb.OrderService_UpdateOrdersServer) error {
+	for {
+		order, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				log.Println("receive finish")
+				return stream.SendAndClose(&wrapperspb.StringValue{Value: "receive finish"})
+			}
+			log.Fatalf("receive order error:%v", err)
+			continue
+		}
+
+		orderMap[order.Id] = order
+	}
+}
+```
+
+客户端的的实现如下所示
+
+```go
+stream, err := client.UpdateOrders(ctx)
+if err != nil {
+	log.Fatalf("update order fail:%v", err)
+	return
+}
+
+if err := stream.Send(&pb.Order{
+	Id:    1,
+	Goods: []string{"iphone14", "ipad", "airpods"},
+	Price: 10000,
+}); err != nil {
+	log.Fatalf("send order fail:%v", err)
+	return
+}
+
+if err := stream.Send(&pb.Order{
+	Id:    2,
+	Goods: []string{"iphone14", "macbook pro"},
+	Price: 20000,
+}); err != nil {
+	log.Fatalf("send order fail:%v", err)
+	return
+}
+
+response, err := stream.CloseAndRecv()
+if err != nil {
+	log.Fatalf("close stream fail:%v", err)
+	return
+}
+log.Printf("update order resp:%v", response)
+```
+
+与服务端流不同的是，客户端流结束发送后，需要通过**CloseAndRecv**来表明流结束发送，并且接受服务端响应。
+
 ### 3.4 双向流RPC模式
+双向流（Bidirectional）rpc模式，顾名思义就是客户端和服务端均采用流的方式进行通信。这种模式必须由客户端发起，之后则完全基于grpc客户端和服务器端的程序逻辑。
 
 ## grpc的高阶使用
 ### 负载均衡

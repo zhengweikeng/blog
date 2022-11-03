@@ -2,6 +2,7 @@ package main
 
 import (
 	pb "example/order"
+	"io"
 	"log"
 	"net"
 	"strings"
@@ -10,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-var orders = map[int]*pb.Order{
+var orders = map[int32]*pb.Order{
 	1: {
 		Id:    1,
 		Goods: []string{"iphone 14", "airpods"},
@@ -43,6 +44,22 @@ func (svc OrderService) QueryOrders(search *wrapperspb.StringValue,
 	}
 
 	return nil
+}
+
+func (svc OrderService) UpdateOrders(stream pb.OrderService_UpdateOrdersServer) error {
+	for {
+		order, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				log.Println("receive finish")
+				return stream.SendAndClose(&wrapperspb.StringValue{Value: "receive finish"})
+			}
+			log.Fatalf("receive order error:%v", err)
+			continue
+		}
+
+		orders[order.Id] = order
+	}
 }
 
 func main() {
