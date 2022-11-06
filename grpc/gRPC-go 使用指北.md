@@ -647,9 +647,321 @@ if err := stream.CloseSend(); err != nil {
 * 客户端可以并发的读取和写入同一个流
 * 流的操作完全独立，客户端和服务器端可以按照任意顺序进行读取和写入
 
-## grpc的高阶使用
-### 负载均衡
-### 拦截器
+## 4. grpc的高阶使用
+从这一章节开始，我们将会学习使用一些更加高阶的功能，熟悉并掌握这些功能，能够让我们的微服务赋予更加强大的功能。
+
+### 4.1 负载均衡
+在之前的例子中，客户端发起对服务端的请求时，都是采用固定的ip和端口，但是我们实际项目中，我们的服务为了满足更高的可用性和并发能力都会启用多个实例（节点）。另一方面，在如今云原生的场景下，容器编排（kubernetes）越来越普及，实例的节点ip也并不总是固定不变。因此这种访问服务端的方式在实际项目中并不合适。
+
+正因如此，当客户端请求服务端时，便需要根据一定的负载均衡策略去选择可以访问的节点。而作为grpc，在实现负载均衡这块，可以采用如下三种方式：
+1. 负载均衡器代理
+2. 客户端负载均衡
+
+接下来会来介绍这几种方式，重点将会介绍服务发现的方式。
+
+#### 4.1.1 负载均衡器代理
+![grpc_balancer](../images/grpc_balancer.jpg)
+这种方式下，客户端请求的是负载均衡器，由负载均衡器根据一定策略挑选后端的节点，再将请求转发给该节点。
+
+负载均衡器需要选择能够支持HTTP/2的，或者直接挑选能够支持grpc的，例如nginx、envoy代理。
+
+#### 4.1.2 客户端负载均衡
+这种方式，负载均衡器将会放置在客户端内，由客户端来选择服务实例的节点。因此客户端需要知道服务端的所有节点信息，并具备节点的管理和选择的能力。
+
+![grpc-client-balancer](../images/grpc-client-balancer.jpg)
+
+grpc目前支持了客户端的负载均衡，在节点挑选的策略上，默认支持两种：
+1. pick_first，尝试连接第一个，默认策略
+	1. 如果能够连接成功，就会将该地址用于所有的 RPC
+	2. 如果失败，则会尝试下一个地址
+3. round_robin，轮询每个后端节点，做到雨露均沾
+
+```go
+serverPolicy := `{
+	"loadBalancingConfig": [ { "round_robin": {} } ]
+}`
+
+conn, err := grpc.Dial(
+	"demo://order",
+	grpc.WithDefaultServiceConfig(serverPolicy),
+	grpc.WithTransportCredentials(insecure.NewCredentials()),
+)
+if err != nil {
+	return err
+}
+defer conn.Close()
+```
+
+这里出现一个特殊的字符串”demo://order“，其中demo代表模式名（Scheme），order代表服务名（Service）。由于建立连接时不再采用ip+端口方式，grpc通过这种模式+服务名的方式去匹配到服务节点集合，并根据**WithBalancerName**指定的策略，挑选出一个节点进行连接。
+
+至于模式和服务是如何被解析为实际的ip和端口的，下一结会来重点讲述，这里暂先略过。
+
+然而，这种将负载均衡器放置在客户端的方式，会让客户端显得臃肿了一些，客户端除了完成自身的请求与响应的处理外，还需要负责服务端实例节点的维护，在服务端节点下线时，客户端需要及时进行剔除。
+
+随着云原生生态的发展，服务注册与发现越来越被广泛的用在微服务中，通过这种方式不仅可以实现多实例的负载，还能实现实例的动态选择和限流等容灾功能，进而实现更强大的分布式微服务集群的管理，接下来我们便来介绍这种使用方式。
+
+#### 4.1.3 服务注册中心
+![grpc-naming-service.jpg](../images/grpc-naming-service.jpg)
+这里引入了一个”服务注册中心“的组件，微服务上线时，需要主动向注册中心注册节点，上报自己的ip和端口。也就是说，注册中心维护了注册上去的这些微服务的节点信息。
+
+客户端请求服务接口时，将会分为以下几步：
+1. 向注册中心询问要访问的服务的节点信息，即ip和端口等
+2. 注册中心根据负载均衡策略，从已注册上去的服务实例中挑选出实例，将实例信息返回给客户端
+3. 客户端获取到实例信息后，则可以直接向服务实例发起请求
+
+常用的服务注册中心有：consul、eureka、etcd，还有腾讯开源的[北极星](https://github.com/polarismesh/polaris-go)
+
+不难发现，其实上述1和2的过程就是服务名解析的过程。对于grpc-go来说，天然支持了名字解析的功能，只需要将注册中心查询实例节点的过程，按照grpc-go协议的规则封装即可。
+
+以腾讯的北极星为例子，我们只需要实现一个北极星名字解析的插件，便能够实现实例节点的发现。
+
+借助名字解析后，我们的客户端代码实现又变得相对简单了一些
+```go
+service := fmt.Sprintf("%s://%s", schema, serviceName)
+conn, err := grpc.Dial(service,
+		 grpc.WithTransportCredentials(insecure.NewCredentials())
+... // 错误处理
+
+makeGrpcRequest(conn)
+```
+
+#### 4.1.4 名字解析
+这一节，我们就来重点学学，如何在grpc-go中实现一个名字解析器的插件。
+
+根据grpc-go框架要求，我们需要实现如下两个接口：
+* resolver.Builder接口，用来创建名字解析器（resolver），该接口包含如下两个方法
+	* Build()，用于创建解析器resolver，grpc在调用Dial建立连接时，会采用同步（synchronously）的方式调用该方法
+	* Scheme()，用于返回该解析器的模式，例如上述案例中的”demo“
+* resolver.Resolver接口，名字解析器，它会监听该服务名下实例节点的变化，该接口包含如下两个方法
+	* ResolveNow()，解析目标名字。它需要被设计成支持并发调用的功能。
+	* Close()，关闭解析器
+
+接下来，我们便来实现一个简单的名字解析器。将"demo://myService.order"解析到 127.0.0.1:10000 和 127.0.0.1:10001上。
+
+首先，先实现resolver.Resolver接口
+```go
+var serviceCenter = map[string][]string{
+	"myService.order": {
+		"127.0.0.1:10000",
+		"127.0.0.1:10001",
+	},
+}
+
+type demoResolver struct {
+	target resolver.Target
+	cc     resolver.ClientConn
+	rn     chan struct{}
+	wg     sync.WaitGroup
+}
+
+func (r *demoResolver) watcher() {
+	defer r.wg.Done()
+
+	ticker := time.NewTicker(5 * time.Second) 
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-r.rn:  ①
+		case <-ticker.C: ②
+		}
+
+		// 从注册中心获取所有节点
+		addrs, ok := serviceCenter[r.target.URL.Host] ③
+		if !ok {
+			continue
+		}
+
+		state := &resolver.State{}
+		for _, addr := range addrs {
+			state.Addresses = append(state.Addresses, resolver.Address{
+				Addr: addr,
+			})
+		}
+		r.cc.UpdateState(*state)
+	}
+}
+
+func (r *demoResolver) ResolveNow(resolver.ResolveNowOptions) {
+	select {
+	case r.rn <- struct{}{}:
+	default:
+	}
+}
+
+func (r *demoResolver) Close() {}
+```
+
+通过①和②，实现定时监控节点变化。③处，构建一个服务注册中心的映射，实际项目中可以换为对应的服务注册组件来获取，例如consul、北极星等。
+
+接下来实现resolver.Builder接口
+
+```go
+type DemoResolverBulder struct{}
+
+func (builder *DemoResolverBulder) Build(target resolver.Target,
+	cc resolver.ClientConn,
+	opts resolver.BuildOptions) (resolver.Resolver, error) {
+	demoResolver := &demoResolver{
+		target: target,
+		cc:     cc,
+		rn:     make(chan struct{}),
+	}
+
+	demoResolver.wg.Add(1)
+	go demoResolver.watcher()
+	demoResolver.ResolveNow(resolver.ResolveNowOptions{})
+
+	return demoResolver, nil
+}
+
+func (receiver *DemoResolverBulder) Scheme() string {
+	return "demo"
+}
+```
+
+最后，注册该builder即可：
+```go
+func init() {
+	resolver.Register(&DemoResolverBulder{})
+}
+```
+
+之后，我们便可以采用如下方式连接服务端
+```go
+conn, err := grpc.Dial(
+	"demo://myService.order",
+	grpc.WithTransportCredentials(insecure.NewCredentials()),
+)
+if err != nil {
+	return err
+}
+defer conn.Close()
+```
+
+以上便是实现一个名字解析器的过程，具体grpc是如何调用我们注册的demo名字解析器，可以自行研究下grpc-go的源码，之后也会写一篇关于底层源码分析的文章来描述。
+
+这里也给出两个名字解析器的真实案例，感兴趣可以阅读，提高对解析器实现的理解：
+1. grpc-go dns解析器源码：https://github.com/grpc/grpc-go/blob/master/internal/resolver/dns/dns_resolver.go
+2. 腾讯北极星grpc插件源码：https://github.com/polarismesh/grpc-go-polaris/blob/main/resolver.go
+
+注意：解析器只是解析出了该名字下所有的实例节点，而真正发起请求的时候，节点的选择并不是解析器的职责。之前提到grpc-go默认支持了两种负载均衡策略，我们也同样可以定制实现其他的策略，具体可以参考`balancer.Builder`接口的定义，本文就不再说明。
+
+### 4.2 拦截器
+有时我们期望服务端在执行远程方法之前或者之后，抑或客户端在调用远程方法之前或者之后，执行一些通用的逻辑，例如认证、监控上报等，grpc为我们提供了拦截器（interceptor）的功能。
+
+grpc的拦截器根据rpc的模式，分为
+* 一元拦截器（unary interceptor），用于一元rpc模式
+* 流拦截器（streaming interceptor），用于流rpc
+这两种拦截器可以用于服务端，也可以用于客户端。
+
+#### 4.2.1 服务端拦截器
+顾名思义，是在服务端的远程方法执行之前或者之后执行的一段逻辑。
+![server_interceptor](../images/server_interceptor.jpg)
+
+**一元拦截器**
+需要实现UnaryServerInterceptor类型的函数，并在创建grpc服务的时候注册进去即可。
+```go
+func orderInterceptor(ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler) (resp interface{}, err error) {
+	log.Printf("before handle: %s", info.FullMethod)
+	ctx = context.WithValue(ctx, "foo", "bar")
+
+	result, err := handler(ctx, req)
+
+	log.Printf("after handle, result:%v, err:%v", result, err)
+	return result, err
+}
+
+func main() {
+	s := grpc.NewServer(grpc.UnaryInterceptor(orderInterceptor))
+	...
+}
+```
+
+从代码可以看出，通过`handler(ctx, req)` 便可以区分请求之前和之后的处理逻辑，达到请求拦截和响应拦截的效果。
+
+**流拦截器**
+需要实现StreamServerInterceptor类型函数，并在创建grpc服务的时候注册进去即可。
+```go
+func orderStreamInterceptorfunc(srv interface{},
+	ss grpc.ServerStream,
+	info *grpc.StreamServerInfo,
+	handler grpc.StreamHandler) error {
+	log.Printf("before steaming handle: %s", info.FullMethod)
+
+	err := handler(srv, ss)
+	if err != nil {
+		log.Printf("handle error:%v", err)
+	}
+
+	return err
+}
+
+func main() {
+	s := grpc.NewServer(grpc.StreamInterceptor(orderStreamInterceptorfunc))
+	...
+}
+```
+
+#### 4.2.2 客户端拦截器
+当客户端发起对服务端的请求时，可以在请求发起前后进行拦截，执行一些通用的逻辑。
+![client_interceptor](../images/client_interceptor.jpg)
+
+**一元拦截器**
+需要实现UnaryClientInterceptor类型函数，并注册到grpc.Dial中。
+```go
+func orderUnaryClientInterceptor(ctx context.Context,
+	method string,
+	req, reply interface{},
+	cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	log.Printf("invoke remote method:%s", method)
+
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	if err != nil {
+		log.Printf("invoke err:%v", err)
+	}
+
+	return nil
+}
+
+func main() {
+	conn, err := grpc.Dial("127.0.0.1:10000",
+		grpc.WithUnaryInterceptor(orderUnaryClientInterceptor),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	...
+}				
+```
+
+**流拦截器**
+需要实现StreamClientInterceptor类型函数，并注册到grpc.Dial中。
+```go
+func orderStreamInterceptor(ctx context.Context,
+	desc *grpc.StreamDesc,
+	cc *grpc.ClientConn,
+	method string,
+	streamer grpc.Streamer,
+	opts ...grpc.CallOption) (grpc.ClientStream, error) {
+	log.Printf("invoke remote method:%s", method)
+
+	stream, err := streamer(ctx, desc, cc, method, opts...)
+	if err != nil {
+		log.Printf("streamer err:%v", err)
+	}
+	return stream, err
+}
+
+func main() {
+	conn, err := grpc.Dial("127.0.0.1:10000",
+		grpc.WithStreamInterceptor(orderStreamInterceptor),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	...
+}		
+```
+
+
 ### 超时和取消
 ### 多路复用
 ### 元数据

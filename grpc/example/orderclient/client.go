@@ -13,7 +13,10 @@ import (
 )
 
 func main() {
-	conn, err := grpc.Dial("127.0.0.1:10000", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("127.0.0.1:10000",
+		grpc.WithUnaryInterceptor(orderUnaryClientInterceptor),
+		grpc.WithStreamInterceptor(orderStreamInterceptor),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -115,4 +118,33 @@ func main() {
 		log.Fatalf("close stream error:%v", err)
 	}
 	<-ch
+}
+
+func orderUnaryClientInterceptor(ctx context.Context,
+	method string,
+	req, reply interface{},
+	cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	log.Printf("invoke remote method:%s", method)
+
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	if err != nil {
+		log.Printf("invoke err:%v", err)
+	}
+
+	return nil
+}
+
+func orderStreamInterceptor(ctx context.Context,
+	desc *grpc.StreamDesc,
+	cc *grpc.ClientConn,
+	method string,
+	streamer grpc.Streamer,
+	opts ...grpc.CallOption) (grpc.ClientStream, error) {
+	log.Printf("invoke remote method:%s", method)
+
+	stream, err := streamer(ctx, desc, cc, method, opts...)
+	if err != nil {
+		log.Printf("streamer err:%v", err)
+	}
+	return stream, err
 }

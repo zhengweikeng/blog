@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	pb "example/order"
 	"io"
 	"log"
@@ -93,7 +94,7 @@ func (svc OrderService) ProcessOrders(stream pb.OrderService_ProcessOrdersServer
 }
 
 func main() {
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.UnaryInterceptor(orderInterceptor), grpc.StreamInterceptor(orderStreamInterceptorfunc))
 
 	pb.RegisterOrderServiceServer(s, &OrderService{})
 	log.Printf("start listen order service port:%d", 10000)
@@ -107,4 +108,31 @@ func main() {
 	if err := s.Serve(ls); err != nil {
 		log.Fatalf("order service serve error:%v", err)
 	}
+}
+
+func orderInterceptor(ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler) (resp interface{}, err error) {
+	log.Printf("before handle: %s", info.FullMethod)
+	ctx = context.WithValue(ctx, "foo", "bar")
+
+	result, err := handler(ctx, req)
+
+	log.Printf("after handle, result:%v, err:%v", result, err)
+	return result, err
+}
+
+func orderStreamInterceptorfunc(srv interface{},
+	ss grpc.ServerStream,
+	info *grpc.StreamServerInfo,
+	handler grpc.StreamHandler) error {
+	log.Printf("before steaming handle: %s", info.FullMethod)
+
+	err := handler(srv, ss)
+	if err != nil {
+		log.Printf("handle error:%v", err)
+	}
+
+	return err
 }
