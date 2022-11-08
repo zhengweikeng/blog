@@ -661,6 +661,7 @@ if err := stream.CloseSend(); err != nil {
 
 #### 4.1.1 负载均衡器代理
 ![grpc_balancer](../images/grpc_balancer.jpg)
+
 这种方式下，客户端请求的是负载均衡器，由负载均衡器根据一定策略挑选后端的节点，再将请求转发给该节点。
 
 负载均衡器需要选择能够支持HTTP/2的，或者直接挑选能够支持grpc的，例如nginx、envoy代理。
@@ -702,6 +703,7 @@ defer conn.Close()
 
 #### 4.1.3 服务注册中心
 ![grpc-naming-service.jpg](../images/grpc-naming-service.jpg)
+
 这里引入了一个”服务注册中心“的组件，微服务上线时，需要主动向注册中心注册节点，上报自己的ip和端口。也就是说，注册中心维护了注册上去的这些微服务的节点信息。
 
 客户端请求服务接口时，将会分为以下几步：
@@ -961,16 +963,147 @@ func main() {
 }		
 ```
 
+### 4.3 grpc与http
+有些时候，我们的客户端并不一定具备grpc协议（protocol buffers）的接入能力，例如一些web端，这时候我们期望服务端能够提供的是基于HTTP协议的接口服务。
 
-### 超时和取消
-### 多路复用
-### 元数据
-### 基于TLS的grpc服务
+作为后台服务，我们也经常期望能够使用统一的技术栈来构建系统，降低服务间的维护成本。而作为grpc-go也确实提供了这样的网关插件，用来实现反向代理的功能，进而能够实现将restful json api转化为grpc。
 
-## grpc扩展
-### 使用grpc实现一个http协议的服务
-### grpc的健康检查
-### 压力测试
-### Prometheus集成
-### 链路跟踪
+![grpc-gateway](../images/grpc-gateway.png)
+
+接下来看看如何实现一个接收http请求的grpc服务。
+
+首先定义proto协议
+```protobuf
+syntax = "proto3";
+package gateway;
+
+option go_package = "example/gateway";
+
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+
+service Greeter {
+    rpc SayHello(HelloRequest) returns (HelloReply) {
+        option (google.api.http) = {
+            post: "/api/hello" ①
+            body: "*" ②
+        };
+    }
+
+    rpc Echo(google.protobuf.StringValue) returns (google.protobuf.StringValue) {
+        option (google.api.http) = {
+            get: "/api/echo/{value}" ③
+        };
+    }
+}
+
+message HelloRequest {
+    string name = 1;
+}
+
+message HelloReply {
+    string message = 1;
+}
+```
+
+这里我们引入了一个新的依赖”google/api/annotations.proto“。这个依赖可以在[google api](https://github.com/googleapis/googleapis)中可以找到，我们需要将这个依赖下载下来，放置到相关目录下。
+
+我们为`SayHello`和`Echo`都添加了grpc/http的映射：
+① 说明http请求的method为post请求，且路径为”/api/hello“
+② 消息体映射使用了“*”，表示没有在路径模板绑定的所有字段都应该映射到请求体中
+③ URL 路径模板是 ”/api/echo/{value}“，传入的值作为路径参数
+
+接下来便可以使用protoc编译该文件了，不过在编译之前，我们还需要安装grpc-gateway插件。
+```sh
+$ go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+```
+
+安装完成后，便可以进行桩代码编译了
+```sh
+$ protoc -I=. -I=<your_google_proto_path>/src \
+--go_out=. \
+--go_opt=paths=source_relative \
+--go-grpc_out=. \
+--go-grpc_opt=paths=source_relative \
+--go-grpc_opt=require_unimplemented_servers=false \
+--grpc-gateway_out=. \
+--grpc-gateway_opt=paths=source_relative \
+./gateway/gateway.proto
+```
+
+接下来便可以编写服务端代码了
+```go
+package main
+
+import (
+	"context"
+	pb "example/gateway"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+)
+
+func main() {
+	s := grpc.NewServer()
+	pb.RegisterGreeterServer(s, &GreeterService{})
+
+	addr := "127.0.0.1:10000"
+	ls, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	go func() {
+		log.Fatalln(s.Serve(ls))
+	}()
+
+	mux := runtime.NewServeMux()
+	err = pb.RegisterGreeterHandlerFromEndpoint(context.Background(), mux, addr, []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	})
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+
+	if err = http.ListenAndServe("127.0.0.1:8080", mux); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+type GreeterService struct{}
+
+func (svc *GreeterService) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+	fmt.Println("hello:", req.Name)
+	return &pb.HelloReply{Message: fmt.Sprintf("Hello %s", req.Name)}, nil
+}
+
+func (svc *GreeterService) Echo(_ context.Context, req *wrapperspb.StringValue) (*wrapperspb.StringValue, error) {
+	fmt.Println("echo:", req.Value)
+	return &wrapperspb.StringValue{Value: req.Value}, nil
+}
+```
+1. 首先我们和往常一样启动了一个grpc服务，监听在10000端口上
+2. 接下来我们使用grpc的代理handler注册grpc服务的端点（endpoint），并创建http服务，监听在8080端口上，反向代理我们的grpc服务
+
+启动服务后，便可以发送http请求了：
+```sh
+$ curl http://127.0.0.1:8080/api/echo/jim
+$ curl -L -X POST 'http://127.0.0.1:8080/api/hello' \
+-H 'Content-Type: application/json' \
+--data-raw '{
+    "name": "jack"
+}'
+```
+
+关于grpc网关的更多信息，可以查看其官方文档，[grpc-gateway](https://grpc-ecosystem.github.io/grpc-gateway/)
+
+### 4.4 Prometheus集成
 
