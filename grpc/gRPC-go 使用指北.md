@@ -1039,9 +1039,9 @@ message HelloReply {
 这里我们引入了一个新的依赖”google/api/annotations.proto“。这个依赖可以在[google api](https://github.com/googleapis/googleapis)中可以找到，我们需要将这个依赖下载下来，放置到相关目录下。
 
 我们为`SayHello`和`Echo`都添加了grpc/http的映射：
-① 说明http请求的method为post请求，且路径为”/api/hello“
-② 消息体映射使用了“*”，表示没有在路径模板绑定的所有字段都应该映射到请求体中
-③ URL 路径模板是 ”/api/echo/{value}“，传入的值作为路径参数
+* ① 说明http请求的method为post请求，且路径为”/api/hello“
+* ② 消息体映射使用了“*”，表示没有在路径模板绑定的所有字段都应该映射到请求体中
+* ③ URL 路径模板是 ”/api/echo/{value}“，传入的值作为路径参数
 
 接下来便可以使用protoc编译该文件了，不过在编译之前，我们还需要安装grpc-gateway插件。
 ```sh
@@ -1208,13 +1208,13 @@ func (svc *GreeterService) SayHello(ctx context.Context, req *pb.HelloRequest) (
 	return &pb.HelloReply{Message: fmt.Sprintf("Hello %s", req.Name)}, nil
 }
 ```
-①，创建promethues指标注册中心，它会持有系统中所有注册的数据收集器。如需添加新的收集 器，就要在这个注册中心中对其进行注册。
-②，会创建一些内部预先定义好的标准grpc指标，例如grpc远程方法的执行次数等
-③，创建一个自定义的指标，这里是用于上报sayHello方法的指标
-④，往注册中心注册所有指标
-⑤，初始化所有的标准度量指标
-⑥，为 Prometheus 创建 HTTP 服务器。在端口9092上以上下文 /metrics 开头的路由用来进行度量指标收集。
-⑦，上报指标
+* ①，创建promethues指标注册中心，它会持有系统中所有注册的数据收集器。如需添加新的收集 器，就要在这个注册中心中对其进行注册。
+* ②，会创建一些内部预先定义好的标准grpc指标，例如grpc远程方法的执行次数等
+* ③，创建一个自定义的指标，这里是用于上报sayHello方法的指标
+* ④，往注册中心注册所有指标
+* ⑤，初始化所有的标准度量指标
+* ⑥，为 Prometheus 创建 HTTP 服务器。在端口9092上以上下文 /metrics 开头的路由用来进行度量指标收集。
+* ⑦，上报指标
 
 #### 4.4.2 grpc-go客户端集成promethues
 ```go
