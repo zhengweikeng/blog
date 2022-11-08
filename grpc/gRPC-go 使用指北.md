@@ -1,5 +1,35 @@
-```toc
-```
+- [1. grpc介绍](#1-grpc介绍)
+	- [1.1 什么是grpc](#11-什么是grpc)
+	- [1.2 grpc与protocol buffers的关系](#12-grpc与protocol-buffers的关系)
+	- [1.3 与其他rpc技术的对比](#13-与其他rpc技术的对比)
+		- [1.3.1 HTTP](#131-http)
+		- [1.3.2 Thrift](#132-thrift)
+	- [1.4 小结](#14-小结)
+- [2. 基于go语言实现一个简单grpc服务端和客户端](#2-基于go语言实现一个简单grpc服务端和客户端)
+	- [2.1 前置准备](#21-前置准备)
+	- [2.2 服务接口定义](#22-服务接口定义)
+	- [2.3 服务端实现](#23-服务端实现)
+	- [2.4 客户端实现](#24-客户端实现)
+	- [2.5 运行](#25-运行)
+- [3. grpc的通信模式](#3-grpc的通信模式)
+	- [3.1 一元RPC模式](#31-一元rpc模式)
+	- [3.2 服务器端流RPC模式](#32-服务器端流rpc模式)
+	- [3.3 客户端流GRPC模式](#33-客户端流grpc模式)
+	- [3.4 双向流RPC模式](#34-双向流rpc模式)
+- [4. grpc的高阶使用](#4-grpc的高阶使用)
+	- [4.1 负载均衡](#41-负载均衡)
+		- [4.1.1 负载均衡器代理](#411-负载均衡器代理)
+		- [4.1.2 客户端负载均衡](#412-客户端负载均衡)
+		- [4.1.3 服务注册中心](#413-服务注册中心)
+		- [4.1.4 名字解析](#414-名字解析)
+	- [4.2 拦截器](#42-拦截器)
+		- [4.2.1 服务端拦截器](#421-服务端拦截器)
+		- [4.2.2 客户端拦截器](#422-客户端拦截器)
+	- [4.3 grpc与http](#43-grpc与http)
+	- [4.4 Prometheus集成](#44-prometheus集成)
+		- [4.4.1 grpc-go服务端集成promethues](#441-grpc-go服务端集成promethues)
+		- [4.4.2 grpc-go客户端集成promethues](#442-grpc-go客户端集成promethues)
+- [5. 总结](#5-总结)
 
 ## 1. grpc介绍
 
@@ -1098,7 +1128,7 @@ func (svc *GreeterService) Echo(_ context.Context, req *wrapperspb.StringValue) 
 $ curl http://127.0.0.1:8080/api/echo/jim
 $ curl -L -X POST 'http://127.0.0.1:8080/api/hello' \
 -H 'Content-Type: application/json' \
---data-raw '{
+-D '{
     "name": "jack"
 }'
 ```
@@ -1106,4 +1136,153 @@ $ curl -L -X POST 'http://127.0.0.1:8080/api/hello' \
 关于grpc网关的更多信息，可以查看其官方文档，[grpc-gateway](https://grpc-ecosystem.github.io/grpc-gateway/)
 
 ### 4.4 Prometheus集成
+Prometheus 是一个用于系统监控和警告的开源工具集，是云原生生态下最受欢迎的监控系统。另外它和grpc一样，也是CNCF基金会的成员。
 
+这里简单介绍下Prometheus：
+
+Prometheus集群会调用目标服务（例如grpc-go服务）的“/metrics”接口来收集该服务的度量指标。Prometheus集群会存储收集到的数据，我们可以基于一些规则进行数据的统计、聚合，便于我们观察系统的各项指标，也可以使用像Grafana这样的工具进行更强大的可视化，也可以针对异常的指标生成告警。
+
+关于promethues的使用不是本文的重点，可以自行查阅文档。接下来我们来看看，如何在grpc-go的服务下集成promethues监控。
+
+#### 4.4.1 grpc-go服务端集成promethues
+```go
+package main
+
+import (
+	"context"
+	pb "example/gateway"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+)
+
+var (
+	reg         = prometheus.NewRegistry() ①
+	defaultGrpcMetrics = grpc_prometheus.NewServerMetrics() ②
+
+	// Create a customized counter metric.
+	sayHelloCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "greeter_sayHello_count",
+		Help: "Total number of RPCs handled on the server.",
+	}, []string{"name"}) ③
+)
+
+func init() {
+	reg.MustRegister(defaultGrpcMetrics, sayHelloCount) ④
+}
+
+func main() {
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor))
+	pb.RegisterGreeterServer(s, &GreeterService{})
+	
+	defaultGrpcMetrics.InitializeMetrics(s) ⑤
+
+	addr := "127.0.0.1:10000"
+	ls, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	go func() {
+		http.ListenAndServe("0.0.0.0:9092", promhttp.HandlerFor(reg, promhttp.HandlerOpts{})) ⑥
+	}()
+
+	log.Fatalln(s.Serve(ls))
+}
+
+type GreeterService struct{}
+
+func (svc *GreeterService) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+	sayHelloCount.WithLabelValues(req.Name).Inc() ⑦
+	fmt.Println("hello:", req.Name)
+	return &pb.HelloReply{Message: fmt.Sprintf("Hello %s", req.Name)}, nil
+}
+```
+①，创建promethues指标注册中心，它会持有系统中所有注册的数据收集器。如需添加新的收集 器，就要在这个注册中心中对其进行注册。
+②，会创建一些内部预先定义好的标准grpc指标，例如grpc远程方法的执行次数等
+③，创建一个自定义的指标，这里是用于上报sayHello方法的指标
+④，往注册中心注册所有指标
+⑤，初始化所有的标准度量指标
+⑥，为 Prometheus 创建 HTTP 服务器。在端口9092上以上下文 /metrics 开头的路由用来进行度量指标收集。
+⑦，上报指标
+
+#### 4.4.2 grpc-go客户端集成promethues
+```go
+package main
+
+import (
+	"bufio"
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
+	pb "example/gateway"
+
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+func main() {
+	reg := prometheus.NewRegistry()
+	grpcMetrics := grpc_prometheus.NewClientMetrics()
+	reg.MustRegister(grpcMetrics)
+
+	conn, err := grpc.Dial(
+		"127.0.0.1:10000",
+		grpc.WithUnaryInterceptor(grpcMetrics.UnaryClientInterceptor()),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer conn.Close()
+
+	go func() {
+		http.ListenAndServe("0.0.0.0:9094", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+	}()
+
+	client := pb.NewGreeterClient(conn)
+
+	// 每隔3秒，调用远程方法
+	go func() {
+		for {
+			_, err := client.SayHello(context.Background(), &pb.HelloRequest{Name: "Test"})
+			if err != nil {
+				return
+			}
+			time.Sleep(3 * time.Second)
+		}
+	}()
+
+	// 这里便于我们退出客户端
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() { 
+		if strings.ToLower(scanner.Text()) == "n" {
+			os.Exit(0)
+		}
+	}
+}
+```
+
+客户端的实现和服务端没太大差别，主要将grpc_prometheus.NewServerMetrics()换成`grpc_prometheus.NewClientMetrics()`，因此这里也不展开讲了。
+
+## 5. 总结
+grpc的生态非常的庞大，社区上有非常丰富则组件能够帮助我们实现更加健壮的系统，例如日志系统集成、链路跟踪等等，后面有时间再继续补充上去。
