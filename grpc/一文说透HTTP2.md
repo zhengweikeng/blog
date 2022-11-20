@@ -170,6 +170,7 @@ resp, err := client.Get("/demo")
 其中首部的定义有了一些区别
 
 ![http2-message.svg](../images/http2-message.svg)
+
 HTTP/2将以前HTTP/1的请求和状态行首部都进行了重新的定义，定义上更加清晰了。其他更多的首部帧定义这里就不多举例了。
 
 #### 3.2.2 多路复用
